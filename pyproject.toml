@@ -3,8 +3,14 @@ name = "aa228v-finalproject"
 version = "0.1.0"
 description = "Final project repository for AA228V"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
+    "argparse>=1.4.0",
+    "gym>=0.26.2",
+    "gymnasium>=1.0.0",
     "matplotlib>=3.10.0",
     "numpy>=2.2.2",
+    "pygame>=2.6.1",
+    "scikit-learn>=1.6.1",
+    "torch>=2.5.1",
 ]
