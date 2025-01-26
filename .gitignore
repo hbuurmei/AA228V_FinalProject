@@ -12,6 +12,3 @@ set_venv.sh
 
 #  MacOS
 .DS_Store
-
-# uv
-.python-version
