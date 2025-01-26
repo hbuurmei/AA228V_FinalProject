@@ -42,7 +42,9 @@ class MLPAgent:
     def predict(self, state):
         self.model.eval()
         with torch.no_grad():
-            state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+            if isinstance(state, tuple):
+                state = state[0]
+            state = torch.FloatTensor(np.array(state)).unsqueeze(0).to(self.device)
             return self.model(state).cpu().numpy()[0]
     
     def batch_predict(self, X):
@@ -116,5 +118,5 @@ class MLPAgent:
         torch.save(self.model.state_dict(), filename)
     
     def load_model(self, filename):
-        self.model.load_state_dict(torch.load(filename))
+        self.model.load_state_dict(torch.load(filename, weights_only=True))
         self.model.eval()

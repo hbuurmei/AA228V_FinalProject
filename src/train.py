@@ -45,9 +45,24 @@ def train_expert(config, n_episodes=1000):
     return agent, scores
 
 
+def single_rollout(agent, config, render=False):
+    if render:
+        env = gym.make(config["name"], render_mode="human")
+    else:
+        env = gym.make(config["name"], render_mode=None)
+    state = env.reset()[0]
+    done = False
+    while not done:
+        action = agent.act(state)
+        next_state, _, done, _, _ = env.step(action)
+        state = next_state
+    env.close()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--train_expert', action='store_true', help='Train expert policy')
+    parser.add_argument('--visualize_expert', action='store_true', help='Visualize expert policy rollout')
     args = parser.parse_args()
     
     config = {
@@ -62,9 +77,15 @@ if __name__ == "__main__":
         expert = MLPAgent(exploration_rate=0)
         expert.load_model("data/models/expert_policy.pth")
 
+    if args.visualize_expert:
+        single_rollout(expert, config, render=True)
+
     # Create D
     X, y = get_dataset_from_model(config, expert, episodes=100)
 
-    # Fit supervised model
-    dt = tree.DecisionTreeClassifier(ccp_alpha=0.01)
+    # Fit decision tree to expert data
+    dt = tree.DecisionTreeClassifier(ccp_alpha=0.02)
     dt.fit(X, y)
+    text_repr = tree.export_text(dt)
+    print("IL with decision tree representation:")
+    print(text_repr)

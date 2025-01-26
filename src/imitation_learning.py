@@ -2,28 +2,24 @@ import gymnasium as gym
 import numpy as np
 
 
-def get_dataset_from_model(config, model, episodes, verbose=False):
+def get_dataset_from_model(config, model, episodes):
     env = gym.make(config["name"])
     
     X = []
     y = []
 
     for _ in range(episodes):
-        state = env.reset()
+        state = env.reset()[0]
         done = False
         
         while not done:
             action = model.act(state)
-            next_state, _, terminated, _ = env.step(action)
+            next_state, _, done, _, _ = env.step(action)
 
             X.append(state)
             y.append(action)
 
             state = next_state
-    
     env.close()
 
-    X = np.array(X)
-    y = np.array(y)
-
-    return X, y
+    return np.array(X), np.array(y)
