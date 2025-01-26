@@ -5,12 +5,12 @@ import numpy as np
 import random
 from collections import deque
 
-MEMORY_SIZE = 1000000
-BATCH_SIZE = 32
+MEMORY_SIZE = int(1e5)
+BATCH_SIZE = 64
 EXPLORATION_MAX = 1.0
 EXPLORATION_MIN = 0.01
 EXPLORATION_DECAY = 0.995
-GAMMA = 0.95
+GAMMA = 0.99
 ALPHA = 0.001
 
 
@@ -84,8 +84,8 @@ class MLPAgent:
         q_values = self.predict(state)
         return np.argmax(q_values)
     
-    def remember(self, state, action, reward, next_state, done):
-        self.memory.append((state, action, reward, next_state, done))
+    def remember(self, state, action, reward, next_state, terminated):
+        self.memory.append((state, action, reward, next_state, terminated))
     
     def experience_replay(self):
         if len(self.memory) < BATCH_SIZE:
@@ -95,8 +95,8 @@ class MLPAgent:
         states = []
         targets = []
         
-        for state, action, reward, next_state, done in batch:
-            if done:
+        for state, action, reward, next_state, terminated in batch:
+            if terminated:
                 target_q = reward
             else:
                 target_q = reward + GAMMA * np.amax(self.predict(next_state))
