@@ -35,7 +35,7 @@ def train_expert(config, max_episodes=1000):
         # Save model if we achieve the target score
         if avg_score >= config["target_score"]:
             print(f'Environment solved in {episode} episodes!')
-            agent.save_model('expert_policy.pth')
+            agent.save_model('data/models/expert_policy.pth')
             break
     
     env.close()
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     config = {
         "name": "CartPole-v1",
         "render": False,
-        "target_score": 450,
+        "target_score": 400,
     }
     if args.train_expert:
         expert, scores = train_expert(config)
