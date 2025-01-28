@@ -25,6 +25,12 @@ def get_dataset_from_model(config, model, episodes):
     return np.array(X), np.array(y)
 
 
+def label_dataset_with_model(model, X):
+    y = model.batch_predict(X)
+    y = [np.argmax(q) for q in y]
+    return y
+
+
 class DTAgent:
     def __init__(self, dt):
         self.dt = dt

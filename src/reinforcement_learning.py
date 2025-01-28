@@ -50,9 +50,6 @@ class MLPAgent:
     def batch_predict(self, X):
         self.model.eval()
         with torch.no_grad():
-            # Handle both tuple and array inputs
-            if isinstance(state, tuple):
-                state = state[0]
             X = torch.FloatTensor(X).to(self.device)
             return self.model(X).cpu().numpy()
     
