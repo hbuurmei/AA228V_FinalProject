@@ -1,10 +1,13 @@
+import torch
 import argparse
 import numpy as np
 from tqdm import tqdm
 import gymnasium as gym
-from sklearn import tree
+import sk2torch
+from sklearn.tree import DecisionTreeClassifier, export_text
+from sklearn.neural_network import MLPClassifier
 from reinforcement_learning import MLPAgent
-from imitation_learning import get_dataset_from_model, label_dataset_with_model, DTAgent
+from imitation_learning import get_dataset_from_model, label_dataset_with_model, ILAgent
 
 
 def train_expert(config, max_episodes=1000):
@@ -68,15 +71,20 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--train_expert', action='store_true', help='Train expert policy')
     parser.add_argument('--visualize_expert', action='store_true', help='Visualize expert policy rollout')
-    parser.add_argument('--method', type=str, choices=['BC', 'AO', 'DA'], required=True,
+    parser.add_argument('--IL_method', type=str, choices=['BC', 'AO', 'DA'], required=True,
                         help='Method to use: BC (Behavioral Cloning), AO (Alternating Optimization), or DA (Data Aggregation)')
+    parser.add_argument('--classifier_type', type=str, choices=['MLP', 'DT'], required=True,
+                        help='Classifier type: MLP (Multi-Layer Perceptron), or DT (Decision Tree)')
     args = parser.parse_args()
 
+    # Define environment configuration
     config = {
         "name": "CartPole-v1",
         "render": False,
         "target_score": 400,
     }
+
+    # Train expert policy
     if args.train_expert:
         expert, scores = train_expert(config)
         expert.exploration_rate = 0
@@ -84,6 +92,7 @@ if __name__ == "__main__":
         expert = MLPAgent(exploration_rate=0)
         expert.load_model("data/models/expert_policy.pth")
 
+    # Visualize expert policy rollout
     if args.visualize_expert:
         policy_rollout(expert, config, render=True)
 
@@ -91,29 +100,27 @@ if __name__ == "__main__":
     X0, y0 = get_dataset_from_model(config, expert, episodes=100)
 
     # Initial policy will be using behavior cloning
-    dt0 = tree.DecisionTreeClassifier(ccp_alpha=0.02)
-    dt0.fit(X0, y0)
-    dt_agent0 = DTAgent(dt0)
+    if args.classifier_type == "MLP":
+        clf0 = MLPClassifier(random_state=1, max_iter=500)
+    elif args.classifier_type == "DT":
+        clf0 = DecisionTreeClassifier(ccp_alpha=0.02)
+    clf0.fit(X0, y0)
+    agent0 = ILAgent(clf0)
     
-    if args.method == "BC":
+    if args.IL_method == "BC":
         # Behavioral Cloning (BC)
-        bc_agent = dt_agent0
-        text_repr = tree.export_text(bc_agent.dt)
-        print("BC with decision tree representation:")
-        print(text_repr)
+        agent = agent0
 
-        # Evaluate decision tree policy
-        avg_reward = policy_rollout(bc_agent, config, N=100)
-        print(f"Average reward of decision tree agent: {avg_reward:.2f}")
-
-        # Visaulize a rollout
-        policy_rollout(bc_agent, config, render=True)
+        if args.classifier_type == "DT":
+            text_repr = export_text(agent.dt)
+            print("BC with decision tree representation:")
+            print(text_repr)
     
-    elif args.method == "AO":
+    elif args.IL_method == "AO":
         # Alternating Optimization (AO)
         
         # Initialize to behavior cloning policy and tracking variables
-        policy = dt_agent0
+        policy = agent0
         best_reward = -np.inf
         best_model = policy
 
@@ -125,9 +132,12 @@ if __name__ == "__main__":
             y = label_dataset_with_model(expert, X)
 
             # Train updated policy
-            dt = tree.DecisionTreeClassifier(ccp_alpha=0.02)
-            dt.fit(X, y)
-            policy = DTAgent(dt)
+            if args.classifier_type == "MLP":
+                clf = MLPClassifier(random_state=1, max_iter=300)
+            elif args.classifier_type == "DT":
+                clf = DecisionTreeClassifier(ccp_alpha=0.02)
+            clf.fit(X, y)
+            policy = ILAgent(clf)
 
             # Evaluate and track best policy
             avg_reward = policy_rollout(policy, config, N=100)
@@ -135,20 +145,13 @@ if __name__ == "__main__":
                 best_reward = avg_reward
                 best_model = policy
         
-        ao_agent = best_model
+        agent = best_model
 
-        # Evaluate the final policy
-        avg_reward = policy_rollout(ao_agent, config, N=100)
-        print(f"Average reward of the final policy: {avg_reward:.2f}")
-
-        # Visaulize a rollout
-        policy_rollout(ao_agent, config, render=True)
-
-    elif args.method == "DA":
+    elif args.IL_method == "DA":
         # Data Aggregation (DA)
 
         # Initialize to behavior cloning policy and tracking variables
-        policy = dt_agent0
+        policy = agent0
         best_reward = -np.inf
         best_model = policy
 
@@ -164,9 +167,12 @@ if __name__ == "__main__":
             y = np.concatenate([y0, y])
 
             # Train updated policy
-            dt = tree.DecisionTreeClassifier(ccp_alpha=0.02)
-            dt.fit(X, y)
-            policy = DTAgent(dt)
+            if args.classifier_type == "MLP":
+                clf = MLPClassifier(random_state=1, max_iter=300)
+            elif args.classifier_type == "DT":
+                clf = DecisionTreeClassifier(ccp_alpha=0.02)
+            clf.fit(X, y)
+            policy = ILAgent(clf)
 
             # Evaluate and track best policy
             avg_reward = policy_rollout(policy, config, N=100)
@@ -174,14 +180,18 @@ if __name__ == "__main__":
                 best_reward = avg_reward
                 best_model = policy
         
-        da_agent = best_model
-
-        # Evaluate the final policy
-        avg_reward = policy_rollout(da_agent, config, N=100)
-        print(f"Average reward of the final policy: {avg_reward:.2f}")
-
-        # Visaulize a rollout
-        policy_rollout(da_agent, config, render=True)
+        agent = best_model
 
     else:
         raise ValueError("Invalid method. Please choose BC, AO, or DA.")
+
+    # Evaluate the resulting policy
+    avg_reward = policy_rollout(agent, config, N=100)
+    print(f"Average reward of {args.IL_method} agent with {args.classifier_type} classifier: {avg_reward:.2f}")
+
+    # Visaulize a rollout
+    # policy_rollout(agent, config, render=True)
+
+    # Convert the trained classifier to a torch model
+    torch_model = sk2torch.wrap(agent.clf)
+    print(torch_model.predict(torch.zeros(1, 4)))

@@ -10,5 +10,8 @@ wheels/
 .venv
 set_venv.sh
 
-#  MacOS
+# MacOS
 .DS_Store
+
+# VSCode
+.vscode/

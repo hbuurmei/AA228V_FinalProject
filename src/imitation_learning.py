@@ -31,14 +31,14 @@ def label_dataset_with_model(model, X):
     return y
 
 
-class DTAgent:
-    def __init__(self, dt):
-        self.dt = dt
+class ILAgent:
+    def __init__(self, clf):
+        self.clf = clf  # classifier object
     
     def act(self, state):
         if isinstance(state, tuple):
             state = state[0]
-        return self.dt.predict([state])[0]
+        return self.clf.predict([state])[0]
     
     def predict(self, X):
-        return self.dt.predict(X)
+        return self.clf.predict(X)

@@ -13,8 +13,10 @@ dependencies = [
     { name = "numpy" },
     { name = "pygame" },
     { name = "scikit-learn" },
+    { name = "sk2torch" },
     { name = "torch" },
     { name = "tqdm" },
+    { name = "traker" },
 ]
 
 [package.metadata]
@@ -26,8 +28,10 @@ requires-dist = [
     { name = "numpy", specifier = ">=2.2.2" },
     { name = "pygame", specifier = ">=2.6.1" },
     { name = "scikit-learn", specifier = ">=1.6.1" },
+    { name = "sk2torch", specifier = ">=1.2.0" },
     { name = "torch", specifier = ">=2.5.1" },
     { name = "tqdm", specifier = ">=4.67.1" },
+    { name = "traker", specifier = ">=0.3.2" },
 ]
 
 [[package]]
@@ -678,6 +682,16 @@ wheels = [
 ]
 
 [[package]]
+name = "sk2torch"
+version = "1.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "scikit-learn" },
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b8/a2/e5bc78a75ad32a063c549d6a01464e53a2c7377e708bf112b65a3ac754e1/sk2torch-1.2.0.tar.gz", hash = "sha256:b748e084ce139cfc5f7aeccabd010a65a213c43d7cd52e67da1d0c65ea8c1ca6", size = 23886 }
+
+[[package]]
 name = "sympy"
 version = "1.13.1"
 source = { registry = "https://pypi.org/simple" }
@@ -743,6 +757,17 @@ sdist = { url = "https://files.pythonhosted.org/packages/a8/4b/29b4ef32e036bb34e
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d0/30/dc54f88dd4a2b5dc8a0279bdd7270e735851848b762aeb1c1184ed1f6b14/tqdm-4.67.1-py3-none-any.whl", hash = "sha256:26445eca388f82e72884e0d580d5464cd801a3ea01e63e5601bdff9ba6a48de2", size = 78540 },
 ]
+
+[[package]]
+name = "traker"
+version = "0.3.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "torch" },
+    { name = "tqdm" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fe/7e/ad78d2e69053504391b7cac4d081b7c52204bae562d89f243641b2633251/traker-0.3.2.tar.gz", hash = "sha256:6a3702b7ab749c57c6d8838fad1772f90c12a58bda572f1e8c02628fd7f091ec", size = 36361 }
 
 [[package]]
 name = "triton"

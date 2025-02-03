@@ -12,6 +12,8 @@ dependencies = [
     "numpy>=2.2.2",
     "pygame>=2.6.1",
     "scikit-learn>=1.6.1",
+    "sk2torch>=1.2.0",
     "torch>=2.5.1",
     "tqdm>=4.67.1",
+    "traker>=0.3.2",
 ]
