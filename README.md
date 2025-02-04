@@ -9,3 +9,11 @@ Run doctests with
 cd src
 uv run python -m doctest *.py
 ```
+
+### Notebooks
+To run the notebooks, run
+
+``` sh
+cd notebooks
+uvx marimo edit <notebook.py>
+```
