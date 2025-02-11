@@ -100,6 +100,9 @@ if __name__ == "__main__":
     # Collect initial dataset from the expert
     X0, y0 = get_dataset_from_model(config, expert, episodes=100)
 
+    # Store this dataset for inspection
+    np.savez_compressed("data/expert_dataset.npz", X=X0, y=y0)
+
     # Initial policy will be using behavior cloning
     if args.classifier_type == "MLP":
         clf0 = MLPClassifier(random_state=1, max_iter=500, hidden_layer_sizes=(24, 24, 24))
