@@ -6,14 +6,12 @@ Note: recommended to use Python 3.9-3.12 for compatibility with torch 2.5.
 Run doctests with
 
 ``` sh
-cd src
-uv run python -m doctest *.py
+uv run python -m doctest src/*.py
 ```
 
 ### Notebooks
-To run the notebooks, run
+Run the notebooks with
 
 ``` sh
-cd notebooks
-uvx marimo edit <notebook.py>
+marimo edit notebooks/<notebook.py>
 ```
