@@ -4,6 +4,7 @@ import numpy as np
 from tqdm import tqdm
 import gymnasium as gym
 import sk2torch
+from trak import TRAKer
 from sklearn.tree import DecisionTreeClassifier, export_text
 from sklearn.neural_network import MLPClassifier
 from reinforcement_learning import MLPAgent
@@ -101,12 +102,12 @@ if __name__ == "__main__":
 
     # Initial policy will be using behavior cloning
     if args.classifier_type == "MLP":
-        clf0 = MLPClassifier(random_state=1, max_iter=500)
+        clf0 = MLPClassifier(random_state=1, max_iter=500, hidden_layer_sizes=(24, 24, 24))
     elif args.classifier_type == "DT":
         clf0 = DecisionTreeClassifier(ccp_alpha=0.02)
     clf0.fit(X0, y0)
     agent0 = ILAgent(clf0)
-    
+
     if args.IL_method == "BC":
         # Behavioral Cloning (BC)
         agent = agent0
@@ -133,7 +134,7 @@ if __name__ == "__main__":
 
             # Train updated policy
             if args.classifier_type == "MLP":
-                clf = MLPClassifier(random_state=1, max_iter=300)
+                clf = MLPClassifier(random_state=1, max_iter=500, hidden_layer_sizes=(24, 24, 24))
             elif args.classifier_type == "DT":
                 clf = DecisionTreeClassifier(ccp_alpha=0.02)
             clf.fit(X, y)
@@ -168,7 +169,7 @@ if __name__ == "__main__":
 
             # Train updated policy
             if args.classifier_type == "MLP":
-                clf = MLPClassifier(random_state=1, max_iter=300)
+                clf = MLPClassifier(random_state=1, max_iter=500, hidden_layer_sizes=(24, 24, 24))
             elif args.classifier_type == "DT":
                 clf = DecisionTreeClassifier(ccp_alpha=0.02)
             clf.fit(X, y)
@@ -189,9 +190,16 @@ if __name__ == "__main__":
     avg_reward = policy_rollout(agent, config, N=100)
     print(f"Average reward of {args.IL_method} agent with {args.classifier_type} classifier: {avg_reward:.2f}")
 
-    # Visaulize a rollout
-    # policy_rollout(agent, config, render=True)
+    # Visualize a rollout
+    policy_rollout(agent, config, render=True)
 
     # Convert the trained classifier to a torch model
     torch_model = sk2torch.wrap(agent.clf)
-    print(torch_model.predict(torch.zeros(1, 4)))
+
+    # Save the trained model
+    torch.save(torch_model, "data/models/imitation_policy.pth")
+
+    # Get TRAK scores
+    # traker = TRAKer(model=torch_model,
+    #                 task='image_classification',  # should also work for general classification tasks
+    #                 train_set_size=len(loader_train.dataset))
