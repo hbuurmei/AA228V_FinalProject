@@ -8,6 +8,7 @@ dependencies = [
     "argparse>=1.4.0",
     "gym>=0.26.2",
     "gymnasium>=1.0.0",
+    "marimo>=0.11.2",
     "matplotlib>=3.10.0",
     "numpy>=2.2.2",
     "pygame>=2.6.1",

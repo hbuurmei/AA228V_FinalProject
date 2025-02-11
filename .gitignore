@@ -15,6 +15,3 @@ set_venv.sh
 
 # VSCode
 .vscode/
-
-# Marimo
-__marimo__/
