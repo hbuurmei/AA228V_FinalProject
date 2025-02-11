@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.10.19"
+__generated_with = "0.11.2"
 app = marimo.App(width="medium", auto_download=["html"])
 
 
@@ -42,8 +42,8 @@ def _():
 @app.cell
 def _(np, pickle):
     # load value function and discretization grid
-    V = np.load("../data/models/qvalues.npy")
-    with open('../data/models/grid_vals.pkl', 'rb') as f:
+    V = np.load("data/qvalues.npy")
+    with open('data/grid_vals.pkl', 'rb') as f:
         grid = pickle.load(f)
     return V, f, grid
 
@@ -128,7 +128,7 @@ def _(V, grid, math, np, plt):
 
 @app.cell(hide_code=True)
 def _(V, grid, np):
-    import sys; sys.path.append("../src")
+    import sys; sys.path.append("src")
     from set_utils import is_in_hull
 
     pts = []
