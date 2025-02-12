@@ -13,5 +13,5 @@ uv run python -m doctest src/*.py
 Run the notebooks with
 
 ``` sh
-marimo edit notebooks/<notebook.py>
+uv run marimo edit notebooks/<notebook.py>
 ```
