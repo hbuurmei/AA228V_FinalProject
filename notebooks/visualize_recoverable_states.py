@@ -40,6 +40,13 @@ def _():
 
 
 @app.cell
+def _():
+    from juliacall import Main as jl
+    jl.sum([1., 2., 3.])
+    return (jl,)
+
+
+@app.cell
 def _(np, pickle):
     # load value function and discretization grid
     V = np.load("data/datasets/qvalues.npy")

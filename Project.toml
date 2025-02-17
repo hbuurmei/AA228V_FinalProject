@@ -8,6 +8,3 @@ Polyhedra = "67491407-f73d-577b-9b50-8179a7c68029"
 PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
-
-[compat]
-PythonCall = "=0.9.24"
