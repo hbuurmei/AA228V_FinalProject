@@ -1,0 +1,10 @@
+method: "BC"
+alpha: 0.001
+input_dim: 4
+hidden_dims: [24, 24]
+output_dim: 2
+max_epochs: 200
+batch_size: 200
+train_data_episodes: 50
+test_data_episodes: 10
+num_models: 5

@@ -29,7 +29,7 @@ def _():
 @app.cell
 def _(np):
     # Import training data
-    expert_dataset = np.load('data/expert_dataset.npz')
+    expert_dataset = np.load('data/datasets/expert_dataset.npz')
     states = expert_dataset['X']
     actions = expert_dataset['y']
     return actions, expert_dataset, states

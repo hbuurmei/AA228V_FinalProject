@@ -68,6 +68,6 @@ while True:
         break
 
 env.close()
-np.save("data/qvalues", V)
-with open("data/grid_vals.pkl", "wb") as f:
+np.save("data/datasets/qvalues", V)
+with open("data/datasets/grid_vals.pkl", "wb") as f:
     pickle.dump(grid, f)

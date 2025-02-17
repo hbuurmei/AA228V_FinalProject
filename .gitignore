@@ -18,3 +18,6 @@ set_venv.sh
 
 # Marimo
 __marimo__/
+
+# TRAK results folder (files too large for git)
+trak_results/

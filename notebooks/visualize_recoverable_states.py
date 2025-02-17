@@ -42,8 +42,8 @@ def _():
 @app.cell
 def _(np, pickle):
     # load value function and discretization grid
-    V = np.load("data/qvalues.npy")
-    with open('data/grid_vals.pkl', 'rb') as f:
+    V = np.load("data/datasets/qvalues.npy")
+    with open('data/datasets/grid_vals.pkl', 'rb') as f:
         grid = pickle.load(f)
     return V, f, grid
 
@@ -129,7 +129,7 @@ def _(V, grid, math, np, plt):
 @app.cell(hide_code=True)
 def _(V, grid, np):
     import sys; sys.path.append("src")
-    from set_utils import is_in_hull
+    from utils import is_in_hull
 
     pts = []
     for indices in np.ndindex(V.shape):
