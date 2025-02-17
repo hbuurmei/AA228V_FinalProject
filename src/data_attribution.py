@@ -10,9 +10,8 @@ from utils import load_config, MLP
 def main():
     # Use GPU if available, otherwise use CPU
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # torch.set_default_device(device)
     print(f"Using device: {device}")
-    
+
     # Load the expert data
     expert_data_train = np.load("data/datasets/expert_data_train.npz")
     expert_data_test = np.load("data/datasets/expert_data_test.npz")
@@ -22,8 +21,8 @@ def main():
     y_test = torch.from_numpy(expert_data_test["y"]).long()
     train_dataset = TensorDataset(X_train, y_train)
     test_dataset = TensorDataset(X_test, y_test)
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=False)
-    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=200, shuffle=False)
+    test_loader = DataLoader(test_dataset, batch_size=200, shuffle=False)
 
     # Get the model checkpoints
     checkpoints_dir = "data/models/checkpoints"
@@ -38,13 +37,14 @@ def main():
 
     # Store results to folder
     trak_results_dir = "data/trak_results"
+    experiment_name = f"{il_agent_config["method"]}_policy"
 
     # Initialize TRAKer object
     traker = TRAKer(model=model,
                     task='image_classification',  # NOTE: also works for non-image data
                     train_set_size=len(train_dataset),
                     save_dir=trak_results_dir,
-                    device=device)
+                    device=str(device))
 
     for model_id, ckpt in enumerate(tqdm(ckpts)):
         # TRAKer loads the provided checkpoint and also associates
@@ -62,16 +62,16 @@ def main():
 
     # Get the scores
     for model_id, ckpt in enumerate(tqdm(ckpts)):
-        traker.start_scoring_checkpoint(exp_name=f"{il_agent_config["method"]}_policy",
+        traker.start_scoring_checkpoint(exp_name=experiment_name,
                                         checkpoint=ckpt,
                                         model_id=model_id,
                                         num_targets=len(test_dataset))
         for batch in test_loader:
             traker.score(batch=batch, num_samples=batch[0].shape[0])
-    scores = traker.finalize_scores(exp_name=f"{il_agent_config["method"]}_policy")
-    print(type(scores), scores.shape)
+    scores = traker.finalize_scores(exp_name=experiment_name)
 
     # Save the scores
+    np.savez_compressed(f"data/scores/{experiment_name}_scores.npz", scores=scores)
 
 
 if __name__ == "__main__":

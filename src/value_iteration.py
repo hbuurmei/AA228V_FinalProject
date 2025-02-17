@@ -68,6 +68,8 @@ while True:
         break
 
 env.close()
+
+# TODO: save V and grid in same npz file
 np.save("data/datasets/qvalues", V)
 with open("data/datasets/grid_vals.pkl", "wb") as f:
     pickle.dump(grid, f)
