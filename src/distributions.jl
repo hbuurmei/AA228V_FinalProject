@@ -1,6 +1,6 @@
 import Random: AbstractRNG
-@kwdef struct Deterministic <: ContinuousUnivariateDistribution
-    val::Real = 0
+@kwdef struct Deterministic{T} <: ContinuousUnivariateDistribution
+    val::T = nothing
 end
 
 function Distributions.rand(rng::AbstractRNG, d::Deterministic)

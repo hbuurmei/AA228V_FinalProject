@@ -38,17 +38,18 @@ function rollout(sys::System, s; d)
 	return τ
 end
 
-struct Disturbance
-    xa # agent disturbance
-    xs # environment disturbance
-    xo # sensor disturbance
+struct Disturbance{AT, ST, OT}
+    xa::AT # agent disturbance
+    xs::ST # environment disturbance
+    xo::OT # sensor disturbance
 end
 
-struct DisturbanceDistribution
+struct DisturbanceDistribution{DT}
     Da # agent disturbance distribution
     Ds # environment disturbance distribution
     Do # sensor disturbance distribution
 end
+disturbance_type(::DisturbanceDistribution{DT}) where DT = DT
 
 function Base.step(sys::System, s, D::DisturbanceDistribution)
     xo = rand(D.Do(s))
@@ -125,8 +126,8 @@ function Base.step(sys::System, s, x)
     return (; o, a, s′)
 end
 
-function rollout(sys::System, s, 𝐱; d=length(𝐱))
-    τ_t = @NamedTuple{s::State_t, o::State_t, a::Int, x::State_t}
+function rollout(sys::System, s, 𝐱::XT; d=length(𝐱)) where XT
+    τ_t = @NamedTuple{s::State_t, o::State_t, a::Int, x::Xt}
     τ = τ_t[]
     for t in 1:d
         x = 𝐱[t]
@@ -138,7 +139,8 @@ function rollout(sys::System, s, 𝐱; d=length(𝐱))
 end
 
 function rollout(sys::System, s, p::TrajectoryDistribution; d=depth(p))
-    τ_t = @NamedTuple{s::State_t, o::State_t, a::Int, x::State_t}
+    X_t = disturbance_type(disturbance_distribution(p, 1))
+    τ_t = @NamedTuple{s::State_t, o::State_t, a::Int, x::X_t}
     τ = τ_t[]
     for t = 1:d
         o, a, s′, x = step(sys, s, disturbance_distribution(p, t))
@@ -150,7 +152,8 @@ end
 
 function rollout(sys::System, p::TrajectoryDistribution; d=depth(p))
     s = rand(initial_state_distribution(p))
-    τ_t = @NamedTuple{s::State_t, o::State_t, a::Int, x::State_t}
+    X_t = disturbance_type(disturbance_distribution(p, 1))
+    τ_t = @NamedTuple{s::State_t, o::State_t, a::Int, x::X_t}
     τ = τ_t[]
     for t = 1:d
         o, a, s′, x = step(sys, s, disturbance_distribution(p, t))
@@ -173,7 +176,8 @@ end
 
 function mean_rollout(sys::System, p::TrajectoryDistribution; d=depth(p))
     s = mean(initial_state_distribution(p))
-    τ_t = @NamedTuple{s::State_t, o::State_t, a::Int, x::State_t}
+    X_t = disturbance_type(disturbance_distribution(p, 1))
+    τ_t = @NamedTuple{s::State_t, o::State_t, a::Int, x::X_t}
     τ = τ_t[]
     for t = 1:d
         o, a, s′, x = mean_step(sys, s, disturbance_distribution(p, t))
