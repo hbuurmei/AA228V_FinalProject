@@ -1,3 +1,11 @@
 name: "CartPole-v1"
 render: false
 target_score: 400
+episode_max_length: 500
+state_dim: 4
+states_min: [-4.8, -4.0, -0.418, -4.0]
+states_max: [4.8, 4.0, 0.418, 4.0]
+action_dim: 2
+action_min: -1
+action_max: 1
+reward_scale: 1
