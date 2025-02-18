@@ -4,7 +4,7 @@ from imitation_learning import ILAgent, train_il_agent
 from utils import load_config, policy_rollout
 
 
-def main():
+def train_agents():
     parser = argparse.ArgumentParser()
     parser.add_argument('--train_expert', action='store_true', help='Train expert policy')
     parser.add_argument('--train_student', action='store_true', help='Train student policy')
@@ -38,4 +38,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    train_agents()

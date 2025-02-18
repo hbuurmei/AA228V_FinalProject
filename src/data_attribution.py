@@ -7,7 +7,7 @@ from trak import TRAKer
 from utils import load_config, MLP
 
 
-def main():
+def run_data_attribution():
     # Use GPU if available, otherwise use CPU
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
@@ -75,4 +75,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    run_data_attribution()

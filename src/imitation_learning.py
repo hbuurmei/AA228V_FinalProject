@@ -146,6 +146,8 @@ def train_il_agent(agent_config, expert, env_config):
     train_loader = DataLoader(train_dataset, batch_size=agent_config["batch_size"], shuffle=True)
 
     # We train multiple models to do data attribution
+    """
+    # Using seeds
     for seed in tqdm(range(agent_config["num_models"]), desc="Training BC models"):
         agent0 = ILAgent(agent_config, seed=seed)
         
@@ -155,6 +157,16 @@ def train_il_agent(agent_config, expert, env_config):
                 X_batch, y_batch = batch
                 agent0.batch_fit(X_batch, y_batch)
         agent0.save_model(f"data/models/checkpoints/{agent_config["method"]}_policy_{seed}.pt")
+    """
+    # Saving intermediate models
+    agent0 = ILAgent(agent_config)
+    for epoch in range(agent_config["max_epochs"]):
+        for batch in train_loader:
+                X_batch, y_batch = batch
+                agent0.batch_fit(X_batch, y_batch)
+        if epoch == 50:
+            agent0.save_model(f"data/models/checkpoints/{agent_config["method"]}_policy_epoch{epoch}.pt")
+    agent0.save_model(f"data/models/checkpoints/{agent_config["method"]}_policy_epoch{epoch}.pt")
     
     if agent_config["method"] == "BC":
         # Behavioral Cloning (BC)
