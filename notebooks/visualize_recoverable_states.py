@@ -10,7 +10,7 @@ def _(mo):
         r"""
         # Visualizing recoverable states
 
-        We try to visualize the 4d state space, and construct a set of "recoverable" states.
+        For the _CartPole-V1_, we visualize the 4D state space, and construct a set of "recoverable" states.
         Later, we will use this to find states that are in theory recoverable, but our policy doesn't manage to recover them.
 
         To determine "recoverability", we have learned a value function as a sort of "ground truth". For the value function, we consider a discretized state set
@@ -18,7 +18,7 @@ def _(mo):
         $$
         s_1 \in [-4.8, 4.8]\\
         s_2 \in [-4.0, 4.0]\\
-        s_3 \in [-0.5, 0.5]\\
+        s_3 \in [-0.418, 0.418]\\
         s_4 \in [-4.0, 4.0]
         $$
 
@@ -39,20 +39,24 @@ def _():
     return math, mo, np, pickle, plt, sp
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _():
-    from juliacall import Main as jl
-    jl.sum([1., 2., 3.])
-    return (jl,)
+    # Get env config
+    import sys; sys.path.append("src")
+    from utils import load_config
+
+    env_config = load_config("config/env/cartpole.yaml")
+    print(f"Current environment: {env_config["name"]}")
+    return env_config, load_config, sys
 
 
 @app.cell
-def _(np, pickle):
+def _(env_config, np):
     # load value function and discretization grid
-    V = np.load("data/datasets/qvalues.npy")
-    with open('data/datasets/grid_vals.pkl', 'rb') as f:
-        grid = pickle.load(f)
-    return V, f, grid
+    value_iteration_data = np.load("data/datasets/value_iteration.npz")
+    V = value_iteration_data["V"]
+    grid = [value_iteration_data[f"grid_dim_{i}"] for i in range(env_config['state_dim'])]
+    return V, grid, value_iteration_data
 
 
 @app.cell(hide_code=True)
@@ -78,7 +82,6 @@ def _(V, plt):
     plt.xlabel("State Value (0 is best)")
     plt.ylabel("Count")
     plt.title("Histogram of recoverable states")
-    fig
     return ax, fig
 
 
@@ -100,7 +103,6 @@ def _(mo):
 def _(V, grid, math, np, plt):
     # Fix indices for position and velocity (5,5)
     fixed_i, fixed_j = math.floor(len(grid[0]) / 2), math.floor(len(grid[1]) / 2)
-    # fixed_i, fixed_j = 4, 0
 
     # Create 2D view of value function
     slice_2d = V[fixed_i, fixed_j, :, :]
@@ -120,7 +122,6 @@ def _(V, grid, math, np, plt):
     plt.title(
         f"Recoverable States (pos={grid[0][fixed_i]:.2f}, vel={grid[1][fixed_j]:.2f})"
     )
-    plt.show()
     return (
         X,
         Y,
@@ -131,22 +132,6 @@ def _(V, grid, math, np, plt):
         slice_2d,
         xticks,
     )
-
-
-@app.cell(hide_code=True)
-def _(V, grid, np):
-    import sys; sys.path.append("src")
-    from utils import is_in_hull
-
-    pts = []
-    for indices in np.ndindex(V.shape):
-        if V[indices] > -0.1:
-            pts.append(np.array([
-                grid[0][indices[0]],
-                grid[1][indices[1]],
-                grid[2][indices[2]],
-                grid[3][indices[3]],]))
-    return indices, is_in_hull, pts, sys
 
 
 @app.cell(hide_code=True)
@@ -163,16 +148,29 @@ def _(mo):
 
 
 @app.cell
-def _(pts):
+def _(V, env_config, grid, np):
     from scipy.spatial import ConvexHull
+    from utils import is_in_hull
+
+    pts = []
+    for indices in np.ndindex(V.shape):
+        if V[indices] > -0.1:
+            pts.append(np.array([
+                grid[0][indices[0]],
+                grid[1][indices[1]],
+                grid[2][indices[2]],
+                grid[3][indices[3]],]))
+
     hull = ConvexHull(pts)
-    total_vol = (2*4.8) * (2*4.0) * (2*0.5) * (2*4.0)
+
+    total_vol = np.prod([2 * value for value in env_config["states_max"]])
+
     print(f"""
-    hull vol: {hull.volume:.2f}
-    total vol: {total_vol:.2f}
-    fraction: {hull.volume / total_vol:.2f}
+    Hull vol: {hull.volume:.2f}
+    Total vol: {total_vol:.2f}
+    Fraction: {hull.volume / total_vol:.2f}
     """)
-    return ConvexHull, hull, total_vol
+    return ConvexHull, hull, indices, is_in_hull, pts, total_vol
 
 
 if __name__ == "__main__":

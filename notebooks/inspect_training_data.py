@@ -110,51 +110,13 @@ def _(mo):
 
 
 @app.cell
-def _(np, states, stats):
-    from scipy.spatial import KDTree
+def _(states_train):
+    # We first just compute the volume of the convex hull of the states in the training data
+    from scipy.spatial import ConvexHull
 
-
-    def create_grid(stats, num_points=15):
-        """
-        Create a grid of points covering the space defined by stats['min'] and stats['max'].
-
-        Parameters:
-        - stats: A dictionary with 'min' and 'max' keys representing min and max values for each dimension.
-        - num_points: Number of points per dimension to create the grid.
-
-        Returns:
-        - ndarray: A grid of shape (num_points^dim, dim).
-        """
-        bounds = np.array([stats["min"], stats["max"]]).T  # Shape (4, 2) if there are 4 dimensions
-        grid = np.array(np.meshgrid(*[np.linspace(b[0], b[1], num_points) for b in bounds])).reshape(len(bounds), -1).T
-        return grid
-
-
-    def dispersion(S, V):
-        """
-        Compute the dispersion metric: the maximum minimum distance from points in S to V.
-
-        Parameters:
-        - S: Grid of points covering the space of interest.
-        - V: Reference set of points.
-
-        Returns:
-        - float: The dispersion value.
-        """
-        tree = KDTree(V)
-        min_distances, _ = tree.query(S)
-        return np.max(min_distances)
-
-
-    grid = create_grid(stats)
-    dispersion_value = dispersion(grid, states)
-    dispersion_value
-    return KDTree, create_grid, dispersion, dispersion_value, grid
-
-
-@app.cell
-def _():
-    return
+    hull = ConvexHull(states_train)
+    print(f"Convex hull volume of training data (states): {hull.volume}")
+    return ConvexHull, hull
 
 
 if __name__ == "__main__":
