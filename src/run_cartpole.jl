@@ -14,6 +14,7 @@ pyimport("sys").path.append("src")
 gym = pyimport("gym"); gym.make("CartPole-v1")
 np = pyimport("numpy")
 RLAgent_py = pyimport("reinforcement_learning"=>"RLAgent")
+ILAgent_py = pyimport("imitation_learning"=>"ILAgent")
 
 
 sys = System(

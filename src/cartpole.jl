@@ -49,6 +49,13 @@ function RLAgent(::Val{expert_agent})
     RLAgent(pyagent)
 end
 
+function RLAgent(::Val{imitation_agent})
+    cfg = YAML.load_file("config/train/il_agent_cartpole.yaml")
+    pyagent = ILAgent_py(cfg)
+    pyagent.load_model("data/models/BC_policy.pt")
+    RLAgent(pyagent)
+end
+
 (agent::RLAgent)(s, a=missing) = agent.pyagent.act(np.array(s)) |> x->pyconvert(Int, x)
 
 # const Project1MediumSystem::Type = System{ProportionalController, CartPole, AdditiveNoiseSensor}
