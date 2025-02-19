@@ -18,24 +18,26 @@ end
 function rollout(sys::System; d=get_depth(sys))
     s = rand(Ps(sys.env))
     τ_t = @NamedTuple{s::State_t, o::State_t, a::Int}
-    τ = τ_t[]
+    # τ = τ_t[]
+    τ = []
     for t in 1:d
         o, a, s′ = step(sys, s)
         push!(τ, (; s, o, a))
         s = s′
     end
-    return τ
+    return τ .|> identity
 end
 
 function rollout(sys::System, s; d)
     τ_t = @NamedTuple{s::State_t, o::State_t, a::Int}
-	τ = τ_t[]
+	# τ = τ_t[]
+	τ = []
 	for t in 1:d
 		o, a, s′ = step(sys, s)
 		push!(τ, (; s, o, a))
 		s = s′
 	end
-	return τ
+	return τ .|> identity
 end
 
 struct Disturbance{AT, ST, OT}
@@ -49,6 +51,7 @@ struct DisturbanceDistribution{DT}
     Ds # environment disturbance distribution
     Do # sensor disturbance distribution
 end
+DisturbanceDistribution(Da, Ds, Do) = DisturbanceDistribution{Any}(Da, Ds, Do)
 disturbance_type(::DisturbanceDistribution{DT}) where DT = DT
 
 function Base.step(sys::System, s, D::DisturbanceDistribution)
@@ -91,7 +94,7 @@ struct NominalTrajectoryDistribution <: TrajectoryDistribution
 end
 
 function NominalTrajectoryDistribution(sys::System, d=get_depth(sys))
-    D = DisturbanceDistribution((o) -> Da(sys.agent, o),
+    D = DisturbanceDistribution{Any}((o) -> Da(sys.agent, o),
                                 (s, a) -> Ds(sys.env, s, a),
                                 (s) -> Do(sys.sensor, s))
     return NominalTrajectoryDistribution(Ps(sys.env), D, d)
@@ -127,21 +130,23 @@ function Base.step(sys::System, s, x)
 end
 
 function rollout(sys::System, s, 𝐱::XT; d=length(𝐱)) where XT
-    τ_t = @NamedTuple{s::State_t, o::State_t, a::Int, x::Xt}
-    τ = τ_t[]
+    # τ_t = @NamedTuple{s::State_t, o::State_t, a::Int, x::XT}
+    # τ = τ_t[]
+    τ = []
     for t in 1:d
         x = 𝐱[t]
         o, a, s′ = step(sys, s, x)
         push!(τ, (; s, o, a, x))
         s = s′
     end
-    return τ
+    return τ .|> identity
 end
 
 function rollout(sys::System, s, p::TrajectoryDistribution; d=depth(p))
-    X_t = disturbance_type(disturbance_distribution(p, 1))
-    τ_t = @NamedTuple{s::State_t, o::State_t, a::Int, x::X_t}
-    τ = τ_t[]
+    # X_t = disturbance_type(disturbance_distribution(p, 1))
+    # τ_t = @NamedTuple{s::State_t, o::State_t, a::Int, x::X_t}
+    # τ = τ_t[]
+    τ = []
     for t = 1:d
         o, a, s′, x = step(sys, s, disturbance_distribution(p, t))
         push!(τ, (; s, o, a, x))
@@ -154,13 +159,14 @@ function rollout(sys::System, p::TrajectoryDistribution; d=depth(p))
     s = rand(initial_state_distribution(p))
     X_t = disturbance_type(disturbance_distribution(p, 1))
     τ_t = @NamedTuple{s::State_t, o::State_t, a::Int, x::X_t}
-    τ = τ_t[]
+    # τ = τ_t[]
+    τ = []
     for t = 1:d
         o, a, s′, x = step(sys, s, disturbance_distribution(p, t))
         push!(τ, (; s, o, a, x))
         s = s′
     end
-    return τ
+    return τ .|> identity
 end
 
 function mean_step(sys::System, s, D::DisturbanceDistribution)
@@ -178,11 +184,12 @@ function mean_rollout(sys::System, p::TrajectoryDistribution; d=depth(p))
     s = mean(initial_state_distribution(p))
     X_t = disturbance_type(disturbance_distribution(p, 1))
     τ_t = @NamedTuple{s::State_t, o::State_t, a::Int, x::X_t}
-    τ = τ_t[]
+    # τ = τ_t[]
+    τ = []
     for t = 1:d
         o, a, s′, x = mean_step(sys, s, disturbance_distribution(p, t))
         push!(τ, (; s, o, a, x))
         s = s′
     end
-    return τ
+    return τ .|> identity
 end

@@ -11,7 +11,7 @@ using IntervalSets
 includet("system.jl")
 includet("distributions.jl")
 includet("cartpole.jl")
-includet("specification")
+includet("specification.jl")
 
 pyimport("sys").path.append("src")
 gym = pyimport("gym"); gym.make("CartPole-v1")
@@ -20,10 +20,14 @@ RLAgent_py = pyimport("reinforcement_learning"=>"RLAgent")
 ILAgent_py = pyimport("imitation_learning"=>"ILAgent")
 
 
-sensor = AdditiveNoiseSensor(Product([Deterministic(0.0),
-                                 Normal(0.0, 0.5),
-                                 Deterministic(0.0),
-                                 Deterministic(0.0)]))
+# sensor = AdditiveNoiseSensor(Product([Deterministic(0.0),
+#                                  Normal(0.0, 0.5),
+#                                  Deterministic(0.0),
+#                                  Deterministic(0.0)]))
+sensor = AdditiveNoiseSensor(Product([Normal(0, 0.1),
+                                 Normal(0.0, 0.1),
+                                 Normal(0, 0.2),
+                                 Normal(0, 0.2)]))
 sys = System(
     RLAgent(expert_agent),
     CartPole(; render=true),

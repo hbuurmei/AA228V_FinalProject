@@ -11,22 +11,26 @@ CartPole(; render=false) = let pyenv = gym.envs.classic_control.CartPoleEnv(rend
 end
 
 function (env::CartPole)(s, a, xs=missing)
-    env.pyenv.state = np.array(s)
-    s_new = env.pyenv.step(a)[0]
-    pyconvert(State_t, s_new)
+    i = last(s)
+    env.pyenv.state = np.array(s[1:end-1])
+    retval = env.pyenv.step(a)
+    s_new = [pyconvert(State_t, retval[0]); i+1]
+    terminated = pyconvert(Bool, retval[2])
+    # terminated && env.pyenv.reset()
+    s_new
 end
 
-Ps(env::CartPole) = Product([
+Ps(env::CartPole) = Product([[
     Uniform(-0.05, 0.05)
     for _ in 1:4
-])
+]; Deterministic(1)])
 
 struct AdditiveNoiseSensor <: Sensor
     Do
 end
 
 (sensor::AdditiveNoiseSensor)(s) = sensor(s, rand(Do(sensor, s)))
-(sensor::AdditiveNoiseSensor)(s, x) = s + x
+(sensor::AdditiveNoiseSensor)(s, x) = s + [x; 0.0]  # last one is iteration number
 
 Do(sensor::AdditiveNoiseSensor, s) = sensor.Do
 
@@ -56,7 +60,17 @@ function RLAgent(::Val{imitation_agent})
     RLAgent(pyagent)
 end
 
-(agent::RLAgent)(s, a=missing) = agent.pyagent.act(np.array(s)) |> x->pyconvert(Int, x)
+(agent::RLAgent)(s, x=nothing) = try
+    # remove "iteration" state, clamp state
+    s_ = clamp.(s[1:4], [0±4.8, 0±Inf, 0±0.41887903, 0±Inf])
+
+    action = agent.pyagent.act(np.array(s_)) |> x->pyconvert(Int, x)
+    @assert action ∈ [0, 1]
+    return action
+catch e
+    @show s, x
+    throw(e)
+end
 
 # const Project1MediumSystem::Type = System{ProportionalController, CartPole, AdditiveNoiseSensor}
 # const Project2MediumSystem::Type = Project1MediumSystem
