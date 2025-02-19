@@ -15,7 +15,7 @@ function Base.step(sys::System, s)
     return (; o, a, s′)
 end
 
-function rollout(sys::System; d=1)
+function rollout(sys::System; d=get_depth(sys))
     s = rand(Ps(sys.env))
     τ_t = @NamedTuple{s::State_t, o::State_t, a::Int}
     τ = τ_t[]
@@ -90,7 +90,7 @@ struct NominalTrajectoryDistribution <: TrajectoryDistribution
     d  # depth
 end
 
-function NominalTrajectoryDistribution(sys::System, d=1)
+function NominalTrajectoryDistribution(sys::System, d=get_depth(sys))
     D = DisturbanceDistribution((o) -> Da(sys.agent, o),
                                 (s, a) -> Ds(sys.env, s, a),
                                 (s) -> Do(sys.sensor, s))
