@@ -6,7 +6,7 @@ struct CartPole <: Environment
       s::State_t
 end
 
-CartPole() = let pyenv = gym.envs.classic_control.CartPoleEnv()
+CartPole(; render=false) = let pyenv = gym.envs.classic_control.CartPoleEnv(render_mode=(render ? "human" : ""))
     CartPole(pyenv, pyconvert(State_t, pyenv.reset()[0]))
 end
 
