@@ -13,16 +13,16 @@ def run_data_attribution():
     print(f"Using device: {device}")
 
     # Load the expert data
-    expert_data_train = np.load("data/datasets/expert_data_train.npz")
-    expert_data_test = np.load("data/datasets/expert_data_test.npz")
-    X_train = torch.from_numpy(expert_data_train["X"]).float()
-    y_train = torch.from_numpy(expert_data_train["y"]).long()
-    X_test = torch.from_numpy(expert_data_test["X"]).float()
-    y_test = torch.from_numpy(expert_data_test["y"]).long()
+    data_train = np.load("data/datasets/expert_data_train.npz")
+    data_target = np.load("data/datasets/BC_target_rollouts.npz")
+    X_train = torch.from_numpy(data_train["X"]).float()
+    y_train = torch.from_numpy(data_train["y"]).long()
+    X_target = torch.from_numpy(data_target["X"]).float()
+    y_target = torch.from_numpy(data_target["y"]).long()
     train_dataset = TensorDataset(X_train, y_train)
-    test_dataset = TensorDataset(X_test, y_test)
+    target_dataset = TensorDataset(X_target, y_target)
     train_loader = DataLoader(train_dataset, batch_size=200, shuffle=False)
-    test_loader = DataLoader(test_dataset, batch_size=200, shuffle=False)
+    target_loader = DataLoader(target_dataset, batch_size=100, shuffle=False)
 
     # Get the model checkpoints
     checkpoints_dir = "data/models/checkpoints"
@@ -44,7 +44,8 @@ def run_data_attribution():
                     task='image_classification',  # NOTE: also works for non-image data
                     train_set_size=len(train_dataset),
                     save_dir=trak_results_dir,
-                    device=str(device))
+                    device=str(device),
+                    use_half_precision=False)
 
     for model_id, ckpt in enumerate(tqdm(ckpts)):
         # TRAKer loads the provided checkpoint and also associates
@@ -65,10 +66,11 @@ def run_data_attribution():
         traker.start_scoring_checkpoint(exp_name=experiment_name,
                                         checkpoint=ckpt,
                                         model_id=model_id,
-                                        num_targets=len(test_dataset))
-        for batch in test_loader:
+                                        num_targets=len(target_dataset))
+        for batch in target_loader:
             traker.score(batch=batch, num_samples=batch[0].shape[0])
     scores = traker.finalize_scores(exp_name=experiment_name)
+    print("Size of scores matrix:", scores.shape)
 
     # Save the scores
     np.savez_compressed(f"data/scores/{experiment_name}_scores.npz", scores=scores)

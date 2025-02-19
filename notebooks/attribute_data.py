@@ -6,7 +6,7 @@ app = marimo.App(width="medium")
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md("""# Data Attribution""")
+    mo.md("""# Data Attribution for Simple Policy""")
     return
 
 
@@ -27,6 +27,29 @@ def _(np):
 @app.cell
 def _(attribution_scores):
     attribution_scores
+    return
+
+
+@app.cell
+def _(attribution_scores, np):
+    np.count_nonzero(attribution_scores)
+    return
+
+
+@app.cell
+def _(attribution_scores, np):
+    np.prod(attribution_scores.shape)
+    return
+
+
+@app.cell
+def _(attribution_scores, np):
+    np.count_nonzero(attribution_scores)/np.prod(attribution_scores.shape)
+    return
+
+
+@app.cell
+def _():
     return
 
 

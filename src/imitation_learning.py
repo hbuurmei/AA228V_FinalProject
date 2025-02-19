@@ -95,7 +95,7 @@ class ILAgent:
         self.model.eval()
 
 
-def get_dataset_from_model(model, env_config, episodes):
+def get_dataset_from_model(model, env_config, episodes, max_steps=500):
     """
     Collect states and actions from a model in an environment.
     """
@@ -107,8 +107,10 @@ def get_dataset_from_model(model, env_config, episodes):
     for _ in range(episodes):
         state = env.reset()[0]
         terminated = truncated = False
+        steps = 0
         
-        while not (terminated or truncated):
+        while not (terminated or truncated) and steps < max_steps:
+            steps += 1
             action = model.act(state)
             next_state, _, terminated, truncated, _ = env.step(action)
 
@@ -146,6 +148,7 @@ def train_il_agent(agent_config, expert, env_config):
     train_loader = DataLoader(train_dataset, batch_size=agent_config["batch_size"], shuffle=True)
 
     # We train multiple models to do data attribution
+    # TODO: compare DA scores when using different models
     """
     # Using seeds
     for seed in tqdm(range(agent_config["num_models"]), desc="Training BC models"):
@@ -164,7 +167,7 @@ def train_il_agent(agent_config, expert, env_config):
         for batch in train_loader:
                 X_batch, y_batch = batch
                 agent0.batch_fit(X_batch, y_batch)
-        if epoch == 50:
+        if epoch == 100:
             agent0.save_model(f"data/models/checkpoints/{agent_config["method"]}_policy_epoch{epoch}.pt")
     agent0.save_model(f"data/models/checkpoints/{agent_config["method"]}_policy_epoch{epoch}.pt")
     
@@ -245,6 +248,11 @@ def train_il_agent(agent_config, expert, env_config):
     avg_reward = policy_rollout(agent, env_config, N=100)
     print(f"Average reward of {agent_config["method"]} agent: {avg_reward:.2f}")
 
+    # Collect data from imitation policy as target for data attribution
+    X_target, y_target = get_dataset_from_model(agent, env_config, episodes=5, max_steps=100)
+    np.savez_compressed(f"data/datasets/{agent_config["method"]}_target_rollouts.npz", X=X_target, y=y_target)
+
     # Save the model
     agent.save_model(f"data/models/{agent_config["method"]}_policy.pt")
+
     return agent, avg_reward

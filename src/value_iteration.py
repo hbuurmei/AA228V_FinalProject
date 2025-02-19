@@ -44,7 +44,6 @@ def value_iteration(env_config):
     # Value iteration
     gamma = 0.8
     theta = 0.1
-    n_samples = 1  # Number of samples per action to account for stochasticity
 
     while True:
         delta = 0
@@ -58,7 +57,7 @@ def value_iteration(env_config):
                 env.reset()
                 # Set environment state
                 env.env.env.env.state = state.copy()
-                next_state, reward, terminated, truncated, _ = env.step(action)
+                next_state, reward, _, _, _ = env.step(action)
 
                 next_indices = discretize_state(next_state, state_bounds, num_bins)
                 action_values[action] = reward + gamma * V[next_indices]
