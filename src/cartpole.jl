@@ -12,7 +12,17 @@ end
 
 function (env::CartPole)(s, a, xs=missing)
     i = last(s)
-    env.pyenv.state = np.array(s[1:end-1])
+    s_ = clamp.(s[1:4], [0±4.8, 0±Inf, 0±0.41887903, 0±Inf])
+
+    (i == 1) && env.pyenv.reset()
+
+    try
+        env.pyenv.state = np.array(s_)
+    catch e
+        @show s_
+        @show e
+        throw(e)
+    end
     retval = env.pyenv.step(a)
     s_new = [pyconvert(State_t, retval[0]); i+1]
     terminated = pyconvert(Bool, retval[2])
@@ -48,6 +58,8 @@ RLAgent(agent_t::AgentType) = RLAgent(Val(agent_t))
 function RLAgent(::Val{expert_agent})
     cfg = YAML.load_file("config/train/rl_agent_cartpole.yaml")
     pyagent = RLAgent_py(cfg)
+    pyagent.device = "cpu"
+    pyagent.model.to(pyagent.device)
     pyagent.load_model("data/models/expert_policy.pt")
     pyagent.exploration_rate = 0
     RLAgent(pyagent)
@@ -56,15 +68,24 @@ end
 function RLAgent(::Val{imitation_agent})
     cfg = YAML.load_file("config/train/il_agent_cartpole.yaml")
     pyagent = ILAgent_py(cfg)
+    pyagent.device = "cpu"
+    pyagent.model.to(pyagent.device)
     pyagent.load_model("data/models/BC_policy.pt")
     RLAgent(pyagent)
 end
 
-(agent::RLAgent)(s, x=nothing) = try
+(agent::RLAgent)(s::AbstractVector{<:Real}, x=nothing) = try
     # remove "iteration" state, clamp state
     s_ = clamp.(s[1:4], [0±4.8, 0±Inf, 0±0.41887903, 0±Inf])
 
-    action = agent.pyagent.act(np.array(s_)) |> x->pyconvert(Int, x)
+    action = try
+        agent.pyagent.act(np.array(s_)) |> x->pyconvert(Int, x)
+    catch e
+        @show s_
+        @show e
+        0
+        # @infiltrate
+    end
     @assert action ∈ [0, 1]
     return action
 catch e

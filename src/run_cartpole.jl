@@ -26,8 +26,8 @@ ILAgent_py = pyimport("imitation_learning"=>"ILAgent")
 #                                  Deterministic(0.0)]))
 sensor = AdditiveNoiseSensor(Product([Normal(0, 0.1),
                                  Normal(0.0, 0.1),
-                                 Normal(0, 0.2),
-                                 Normal(0, 0.2)]))
+                                 Normal(0, 0.15),
+                                 Normal(0, 0.15)]))
 sys = System(
     RLAgent(expert_agent),
     CartPole(; render=true),
