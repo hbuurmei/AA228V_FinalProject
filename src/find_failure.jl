@@ -5,7 +5,7 @@ using Base.Iterators
 
 # dist = WeightedCityblock([0.0; 0.0; 1.0; 0.0; 0.0])
 # dist = WeightedCityblock([1.0; 1.0; 1.0; 1.0; 0.0])
-dist = WeightedEuclidean([1.0; 1.0; 1.0; 1.0; 0.0])
+dist = WeightedEuclidean([0.0; 1.0; 0.5; 1.0; 0.0])
 
 adjacent(xs) = zip(xs[1:end-1], xs[2:end])
 
@@ -66,6 +66,7 @@ function fopt(us, ps)
 
     depths_ = [0; cumsum(depths)]
     τs_new = map(zip(states, adjacent(depths_))) do (s1, (d_lhs, d_rhs))
+        sys.env.pyenv.reset()
         # rollout(sys, s1, qτ; d)
         s = s1
         𝐱 = [let x_ = zeros(length(s)-1)
@@ -79,7 +80,7 @@ function fopt(us, ps)
     # objective 1: violate the specification
     obj1 = let s_end = last(τs_new[end]).s
         # (s_end[1] + s_end[3])*1000
-        s_end[3]*1000
+        s_end[3]*1_000
     end
 
     # objective 2: reduce defect of adjacent trajectories
@@ -90,8 +91,9 @@ function fopt(us, ps)
     # objective 3: maximize likelihood of noise
     pτ = PiecedTrajectoryDistribution(sys)
     obj3 = -sum(τs_new) do τ
-        logpdf(pτ, τ)/1e6
-    end
+        # logpdf(pτ, τ)/1e6
+        pdf(pτ, τ)
+    end * 0
     # TODO: Probably fix this...
     # obj3 = 0
 
@@ -109,14 +111,14 @@ u₀ = ComponentVector((; states, xs=stack(x₀))) .|> x->convert(Float32, x)
 prob = OptimizationProblem(fopt_, u₀, (; sys=sys, s_fail, dist, noise_idx))
 prob′ = OptimizationProblem(fopt_, u₀, (; sys=sys′, s_fail, dist, noise_idx))
 
-sol = solve(prob′, ConjugateGradient(); show_trace=true)
-τ = rollout(sys, sol.u.states[1],
-        [let x_ = zeros(length(sol.u.states[1])-1)
-                @assert x isa AbstractVector
-                x_[noise_idx] .= x
-                (; xa=nothing, xs=nothing, xo=x_)
-            end for x in eachcol(sol.u.xs)])
-isfailure(ψ, τ)
+# sol = solve(prob′, ConjugateGradient(); show_trace=true)
+# τ = rollout(sys, sol.u.states[1],
+#         [let x_ = zeros(length(sol.u.states[1])-1)
+#                 @assert x isa AbstractVector
+#                 x_[noise_idx] .= x
+#                 (; xa=nothing, xs=nothing, xo=x_)
+#             end for x in eachcol(sol.u.xs)])
+# isfailure(ψ, τ)
 
 # prob = OptimizationProblem(fopt_, u₀, (; sys=sys, s_fail, dist, noise_idx))
 # sol = solve(prob, ConjugateGradient(); show_trace=true, maxiters=100)
