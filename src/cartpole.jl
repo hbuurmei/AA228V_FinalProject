@@ -6,7 +6,7 @@ struct CartPole <: Environment
       s::State_t
 end
 
-CartPole(; render=false) = let pyenv = gym.envs.classic_control.CartPoleEnv(render_mode=(render ? "human" : ""), kinematics_integrator="semi-implicit euler")
+CartPole(; render=false) = let pyenv = gym_ptr[].envs.classic_control.CartPoleEnv(render_mode=(render ? "human" : ""))
     CartPole(pyenv, pyconvert(State_t, pyenv.reset()[0]))
 end
 
@@ -19,7 +19,7 @@ function (env::CartPole)(s, a, xs=missing)
     (i == 1) && env.pyenv.reset()
 
     try
-        env.pyenv.state = np.array(s_)
+        env.pyenv.state = np_ptr[].array(s_)
     catch e
         @show s_
         @show e
@@ -58,8 +58,12 @@ struct RLAgent <: Agent
 end
 RLAgent(agent_t::AgentType) = RLAgent(Val(agent_t))
 function RLAgent(::Val{expert_agent})
-    cfg = YAML.load_file("config/train/rl_agent_cartpole.yaml")
-    pyagent = RLAgent_py(cfg)
+    cfg = try
+        YAML.load_file(pkgdir(AA228V_FinalProject, "config", "train", "rl_agent_cartpole.yaml"))
+    catch e
+        YAML.load_file("config/train/rl_agent_cartpole.yaml")
+    end
+    pyagent = RLAgent_py_ptr[](cfg)
     pyagent.device = "cpu"
     pyagent.model.to(pyagent.device)
     pyagent.load_model("data/models/expert_policy.pt")
@@ -68,8 +72,12 @@ function RLAgent(::Val{expert_agent})
 end
 
 function RLAgent(::Val{imitation_agent})
-    cfg = YAML.load_file("config/train/il_agent_cartpole.yaml")
-    pyagent = ILAgent_py(cfg)
+    cfg = try
+        YAML.load_file(pkgdir(AA228V_FinalProject, "config", "train", "il_agent_cartpole.yaml"))
+    catch e
+        YAML.load_file("config/train/il_agent_cartpole.yaml")
+    end
+    pyagent = ILAgent_py_ptr[](cfg)
     pyagent.device = "cpu"
     pyagent.model.to(pyagent.device)
     pyagent.load_model("data/models/BC_policy.pt")
@@ -83,7 +91,7 @@ end
     s_ = s[1:4]
 
     action = try
-        agent.pyagent.act(np.array(s_)) |> x->pyconvert(Int, x)
+        agent.pyagent.act(np_ptr[].array(s_)) |> x->pyconvert(Int, x)
     catch e
         @show s_
         @show e

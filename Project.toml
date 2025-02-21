@@ -1,6 +1,6 @@
 name = "AA228V_FinalProject"
 uuid = "2b83b5e6-75ac-4935-a092-400fa6ce651e"
-version = "0.1.2"
+version = "0.1.3"
 
 [deps]
 ComponentArrays = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"
