@@ -6,13 +6,15 @@ struct CartPole <: Environment
       s::State_t
 end
 
-CartPole(; render=false) = let pyenv = gym.envs.classic_control.CartPoleEnv(render_mode=(render ? "human" : ""))
+CartPole(; render=false) = let pyenv = gym.envs.classic_control.CartPoleEnv(render_mode=(render ? "human" : ""), kinematics_integrator="semi-implicit euler")
     CartPole(pyenv, pyconvert(State_t, pyenv.reset()[0]))
 end
 
 function (env::CartPole)(s, a, xs=missing)
     i = last(s)
-    s_ = clamp.(s[1:4], [0±4.8, 0±Inf, 0±0.41887903, 0±Inf])
+    # we "rate limit" both rates because we run into problems otherwise
+    # s_ = clamp.(s[1:4], [0±4.8, 0±2.0, 0±0.41887903, 0±2.0])
+    s_ = s[1:4]
 
     (i == 1) && env.pyenv.reset()
 
@@ -76,7 +78,9 @@ end
 
 (agent::RLAgent)(s::AbstractVector{<:Real}, x=nothing) = try
     # remove "iteration" state, clamp state
-    s_ = clamp.(s[1:4], [0±4.8, 0±Inf, 0±0.41887903, 0±Inf])
+    # we "rate limit" both rates because we run into problems otherwise
+    # s_ = clamp.(s[1:4], [0±4.8, 0±2.0, 0±0.41887903, 0±2.0])
+    s_ = s[1:4]
 
     action = try
         agent.pyagent.act(np.array(s_)) |> x->pyconvert(Int, x)
