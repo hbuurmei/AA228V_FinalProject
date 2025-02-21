@@ -8,6 +8,7 @@ export System, RLAgent, CartPole, AdditiveNoiseSensor
 export NominalTrajectoryDistribution, DisturbanceDistribution
 export rollout, step, isfailure
 export expert_agent, imitation_agent
+export estimate, ImportanceSamplingEstimator
 
 const gym_ptr = Ref{Py}()
 const np_ptr = Ref{Py}()
@@ -28,5 +29,6 @@ include("system.jl")
 include("distributions.jl")
 include("cartpole.jl")
 include("specification.jl")
+include("failure_probability.jl")
 
 end
