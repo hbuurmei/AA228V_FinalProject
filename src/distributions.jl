@@ -21,7 +21,9 @@ Da(agent::Agent, o) = Deterministic()
 Do(sensor::Sensor, s) = Deterministic()
 
 function DisturbanceDistribution(sys::System)
-    return DisturbanceDistribution((o) -> Da(sys.agent, o),
-                                   (s, a) -> Ds(sys.env, s, a),
-                                   (s) -> Do(sys.sensor, s))
+    return DisturbanceDistribution(
+        (o) -> Da(sys.agent, o),
+        (s, a) -> Ds(sys.env, s, a),
+        (s) -> Do(sys.sensor, s)
+    )
 end

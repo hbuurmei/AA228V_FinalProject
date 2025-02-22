@@ -1,7 +1,7 @@
 struct ImportanceSamplingEstimator
-        p  # nominal distribution
-        q  # proposal distribution
-        m  # number of samples
+    p  # nominal distribution
+    q  # proposal distribution
+    m  # number of samples
 end
 
 function estimate(alg::ImportanceSamplingEstimator, sys, ψ)

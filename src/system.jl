@@ -2,7 +2,7 @@ abstract type Agent end
 abstract type Environment end
 abstract type Sensor end
 
-struct System{A<:Agent, E<:Environment, S<:Sensor}
+struct System{A <: Agent, E <: Environment, S <: Sensor}
     agent::A
     env::E
     sensor::S
@@ -15,7 +15,7 @@ function Base.step(sys::System, s)
     return (; o, a, s′)
 end
 
-function rollout(sys::System; d=get_depth(sys))
+function rollout(sys::System; d = get_depth(sys))
     s = rand(Ps(sys.env))
     τ_t = @NamedTuple{s::State_t, o::State_t, a::Int}
     # τ = τ_t[]
@@ -30,14 +30,14 @@ end
 
 function rollout(sys::System, s; d)
     τ_t = @NamedTuple{s::State_t, o::State_t, a::Int}
-	# τ = τ_t[]
-	τ = []
-	for t in 1:d
-		o, a, s′ = step(sys, s)
-		push!(τ, (; s, o, a))
-		s = s′
-	end
-	return τ .|> identity
+    # τ = τ_t[]
+    τ = []
+    for t in 1:d
+        o, a, s′ = step(sys, s)
+        push!(τ, (; s, o, a))
+        s = s′
+    end
+    return τ .|> identity
 end
 
 struct Disturbance{AT, ST, OT}
@@ -52,7 +52,7 @@ struct DisturbanceDistribution{DT}
     Do # sensor disturbance distribution
 end
 DisturbanceDistribution(Da, Ds, Do) = DisturbanceDistribution{Any}(Da, Ds, Do)
-disturbance_type(::DisturbanceDistribution{DT}) where DT = DT
+disturbance_type(::DisturbanceDistribution{DT}) where {DT} = DT
 
 function Base.step(sys::System, s, D::DisturbanceDistribution)
     xo = rand(D.Do(s))
@@ -93,10 +93,12 @@ struct NominalTrajectoryDistribution <: TrajectoryDistribution
     d  # depth
 end
 
-function NominalTrajectoryDistribution(sys::System, d=get_depth(sys))
-    D = DisturbanceDistribution{Any}((o) -> Da(sys.agent, o),
-                                (s, a) -> Ds(sys.env, s, a),
-                                (s) -> Do(sys.sensor, s))
+function NominalTrajectoryDistribution(sys::System, d = get_depth(sys))
+    D = DisturbanceDistribution{Any}(
+        (o) -> Da(sys.agent, o),
+        (s, a) -> Ds(sys.env, s, a),
+        (s) -> Do(sys.sensor, s)
+    )
     return NominalTrajectoryDistribution(Ps(sys.env), D, d)
 end
 
@@ -129,7 +131,7 @@ function Base.step(sys::System, s, x)
     return (; o, a, s′)
 end
 
-function rollout(sys::System, s, 𝐱::XT; d=length(𝐱)) where XT
+function rollout(sys::System, s, 𝐱::XT; d = length(𝐱)) where {XT}
     # τ_t = @NamedTuple{s::State_t, o::State_t, a::Int, x::XT}
     # τ = τ_t[]
     τ = []
@@ -142,12 +144,12 @@ function rollout(sys::System, s, 𝐱::XT; d=length(𝐱)) where XT
     return τ .|> identity
 end
 
-function rollout(sys::System, s, p::TrajectoryDistribution; d=depth(p))
+function rollout(sys::System, s, p::TrajectoryDistribution; d = depth(p))
     # X_t = disturbance_type(disturbance_distribution(p, 1))
     # τ_t = @NamedTuple{s::State_t, o::State_t, a::Int, x::X_t}
     # τ = τ_t[]
     τ = []
-    for t = 1:d
+    for t in 1:d
         o, a, s′, x = step(sys, s, disturbance_distribution(p, t))
         push!(τ, (; s, o, a, x))
         s = s′
@@ -155,13 +157,13 @@ function rollout(sys::System, s, p::TrajectoryDistribution; d=depth(p))
     return τ
 end
 
-function rollout(sys::System, p::TrajectoryDistribution; d=depth(p))
+function rollout(sys::System, p::TrajectoryDistribution; d = depth(p))
     s = rand(initial_state_distribution(p))
     X_t = disturbance_type(disturbance_distribution(p, 1))
     τ_t = @NamedTuple{s::State_t, o::State_t, a::Int, x::X_t}
     # τ = τ_t[]
     τ = []
-    for t = 1:d
+    for t in 1:d
         o, a, s′, x = step(sys, s, disturbance_distribution(p, t))
         push!(τ, (; s, o, a, x))
         s = s′
@@ -180,13 +182,13 @@ function mean_step(sys::System, s, D::DisturbanceDistribution)
     return (; o, a, s′, x)
 end
 
-function mean_rollout(sys::System, p::TrajectoryDistribution; d=depth(p))
+function mean_rollout(sys::System, p::TrajectoryDistribution; d = depth(p))
     s = mean(initial_state_distribution(p))
     X_t = disturbance_type(disturbance_distribution(p, 1))
     τ_t = @NamedTuple{s::State_t, o::State_t, a::Int, x::X_t}
     # τ = τ_t[]
     τ = []
-    for t = 1:d
+    for t in 1:d
         o, a, s′, x = mean_step(sys, s, disturbance_distribution(p, t))
         push!(τ, (; s, o, a, x))
         s = s′

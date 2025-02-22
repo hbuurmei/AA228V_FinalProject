@@ -21,8 +21,8 @@ function __init__()
     pyimport("sys").path.append(src_path)
     gym_ptr[] = pyimport("gym"); gym_ptr[].make("CartPole-v1")
     np_ptr[] = pyimport("numpy")
-    RLAgent_py_ptr[] = pyimport("reinforcement_learning"=>"RLAgent")
-    ILAgent_py_ptr[] = pyimport("imitation_learning"=>"ILAgent")
+    RLAgent_py_ptr[] = pyimport("reinforcement_learning" => "RLAgent")
+    return ILAgent_py_ptr[] = pyimport("imitation_learning" => "ILAgent")
 end
 
 include("system.jl")
