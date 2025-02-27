@@ -39,55 +39,182 @@ def _(attribution_scores, np):
 
 
 @app.cell
-def _(attribution_scores, np, plt, target_data, training_data):
-    inspection_idx = [0, 50, 100, 150, 200, 250, 300, 350, 400, 450]
-    min_imp_train_sample_idx = []
-    max_imp_train_sample_idx = []
-    for inspection_id in inspection_idx:
-        min_imp_train_sample_idx.append(np.argmin(attribution_scores[:, inspection_id]))
-        max_imp_train_sample_idx.append(np.argmax(attribution_scores[:, inspection_id]))
+def _(attribution_scores, np, plt):
+    plt.hist(np.log10(np.abs(attribution_scores[:, 0])+1e-6))
+    plt.show()
+    return
+
+
+@app.cell
+def _():
+    """
+    from matplotlib.lines import Line2D
+
+
+    inspection_id = 20
+    min_idx = np.argsort(attribution_scores[:, inspection_id])[:10]  # top 10 min
+    max_idx = np.argsort(attribution_scores[:, inspection_id])[-10:][::-1]  # top 10 max (descending)
+
+    target_label = target_data["y"][inspection_id]
+
+    # Select filtered indices
+    if target_label == 0:
+        min_filtered_idx = min_idx[training_data["y"][min_idx] == 1]
+        max_filtered_idx = max_idx[training_data["y"][max_idx] == 0]
+    else:
+        min_filtered_idx = min_idx[training_data["y"][min_idx] == 0]
+        max_filtered_idx = max_idx[training_data["y"][max_idx] == 1]
+
+    # Colors for target data
+    target_colors = 'red' if target_label == 0 else 'blue'
+
+    # Colors for training data
+    colors_min = np.where(training_data["y"][min_filtered_idx] == 0, 'red', 'blue')
+    colors_max = np.where(training_data["y"][max_filtered_idx] == 0, 'red', 'blue')
 
     fig3d = plt.figure()
     ax = fig3d.add_subplot(111, projection='3d')
+
+    # Plot all training data faded out in the background for reference
+    colors_training = np.where(training_data["y"] == 0, 'red', 'blue')
     ax.scatter(
-        target_data["X"][inspection_idx, 1],
-        target_data["X"][inspection_idx, 2],
-        target_data["X"][inspection_idx, 3],
-        c=target_data["y"][inspection_idx],
-        cmap="coolwarm",
-        alpha=0.4,
-        s=10,
-        label="Target data")
+        training_data["X"][:, 1],
+        training_data["X"][:, 2],
+        training_data["X"][:, 3],
+        c=colors_training,
+        alpha=0.01,
+        s=3,
+        label="Training data",
+        marker='o'
+    )
+    # Plot target data
     ax.scatter(
-        training_data["X"][min_imp_train_sample_idx, 1],
-        training_data["X"][min_imp_train_sample_idx, 2],
-        training_data["X"][min_imp_train_sample_idx, 3],
-        c=training_data["y"][min_imp_train_sample_idx],
-        cmap="coolwarm",
-        alpha=0.4,
-        s=10,
-        label="High -influence")
+        target_data["X"][inspection_id, 1],
+        target_data["X"][inspection_id, 2],
+        target_data["X"][inspection_id, 3],
+        c=target_colors,
+        alpha=0.85,
+        s=60,
+        label="Target data",
+        marker='X'
+    )
+
+    # Plot high-influence points
     ax.scatter(
-        training_data["X"][max_imp_train_sample_idx, 1],
-        training_data["X"][max_imp_train_sample_idx, 2],
-        training_data["X"][max_imp_train_sample_idx, 3],
-        c=training_data["y"][max_imp_train_sample_idx],
-        cmap="coolwarm",
-        alpha=0.4,
-        s=10,
-        label="High +influence")
+        training_data["X"][min_filtered_idx, 1],
+        training_data["X"][min_filtered_idx, 2],
+        training_data["X"][min_filtered_idx, 3],
+        c=colors_min,
+        alpha=0.95,
+        s=60,
+        label="High -influence",
+        marker='^'
+    )
+
+    ax.scatter(
+        training_data["X"][max_filtered_idx, 1],
+        training_data["X"][max_filtered_idx, 2],
+        training_data["X"][max_filtered_idx, 3],
+        c=colors_max,
+        alpha=0.95,
+        s=60,
+        label="High +influence",
+        marker='^'
+    )
+
+    # ax.set_xlim([-0.35, 0.35])
+    # ax.set_ylim([-0.035, 0.035])
+    # ax.set_zlim([-0.2, 0.2])
     ax.set_xlabel(r'$v$')
     ax.set_ylabel(r'$\theta$')
     ax.set_zlabel(r'$\omega$')
-    plt.title("Important Data Points Inspection")
-    plt.legend()
+    legend_elements = [
+        Line2D([0], [0], marker='X', color='w', markerfacecolor='black', markersize=8, alpha=0.75, label="Target point"),
+        Line2D([0], [0], marker='o', color='w', markerfacecolor='black', markersize=8, alpha=0.75, label="Training data"),
+        Line2D([0], [0], marker='^', color='w', markerfacecolor='black', markersize=8, alpha=0.75, label="Important points"),
+    ]
+    plt.legend(handles=legend_elements)
+    mo.mpl.interactive(plt.gcf())
+    """
+    return
+
+
+@app.cell
+def _(attribution_scores, np, plt, target_data, training_data):
+    from matplotlib.lines import Line2D
+
+
+    inspection_id = 5
+    min_idx = np.argsort(attribution_scores[:, inspection_id])[:10]  # top 10 min
+    max_idx = np.argsort(attribution_scores[:, inspection_id])[-10:][::-1]  # top 10 max (descending)
+
+    target_label = target_data["y"][inspection_id]
+
+    # Select filtered indices
+    if target_label == 0:
+        min_filtered_idx = min_idx[training_data["y"][min_idx] == 1]
+        max_filtered_idx = max_idx[training_data["y"][max_idx] == 0]
+    else:
+        min_filtered_idx = min_idx[training_data["y"][min_idx] == 0]
+        max_filtered_idx = max_idx[training_data["y"][max_idx] == 1]
+
+    plt.figure(figsize=(5, 3))
+    plt.scatter(
+        training_data["X"][:, 1],
+        training_data["X"][:, 3],
+        c=training_data["y"],
+        cmap="coolwarm",
+        alpha=0.002,
+        marker="o"
+    )
+    plt.scatter(
+        training_data["X"][min_filtered_idx, 1],
+        training_data["X"][min_filtered_idx, 3],
+        c=training_data["y"][min_filtered_idx],
+        cmap="coolwarm",
+        s=70,
+        marker="^"
+    )
+    plt.scatter(
+        training_data["X"][max_filtered_idx, 1],
+        training_data["X"][max_filtered_idx, 3],
+        c=training_data["y"][max_filtered_idx],
+        cmap="coolwarm",
+        s=70,
+        marker="^"
+    )
+    plt.scatter(
+        target_data["X"][inspection_id, 1],
+        target_data["X"][inspection_id, 3],
+        c=target_data["y"][inspection_id],
+        cmap="coolwarm",
+        s=90,
+        marker="X"
+    )
+    legend_elements = [
+        Line2D([0], [0], marker='X', color='w', markerfacecolor='black', markersize=8, alpha=0.75, label="Target point"),
+        Line2D([0], [0], marker='o', color='w', markerfacecolor='black', markersize=8, alpha=0.75, label="Training data"),
+        Line2D([0], [0], marker='^', color='w', markerfacecolor='black', markersize=8, alpha=0.75, label="Important points"),
+    ]
+    plt.xlim([-0.7, 0.7])
+    plt.xlabel(r"$v\ [\text{m sec}^{-1}]$")
+    plt.ylabel(r"$\omega\ [\text{sec}^{-1}]$")
+    yticks = plt.yticks()[0]
+    plt.yticks(yticks, [f"{np.rad2deg(x):.0f}°" for x in yticks])
+    plt.legend(handles=legend_elements)
+    plt.tight_layout()
+    plt.savefig("IL_DA_result.svg", format="svg")
+    plt.gcf()
     return (
-        ax,
-        fig3d,
+        Line2D,
         inspection_id,
-        inspection_idx,
-        max_imp_train_sample_idx,
-        min_imp_train_sample_idx,
+        legend_elements,
+        max_filtered_idx,
+        max_idx,
+        min_filtered_idx,
+        min_idx,
+        target_label,
+        yticks,
     )
 
 
@@ -116,10 +243,10 @@ def _(attribution_scores, np, target_data):
         """
         abs_scores = np.abs(scores)
         probs = abs_scores / np.sum(abs_scores)
-        
+
         # Avoid log(0) by setting p log p = 0 when p = 0
         entropy = -np.sum(probs * np.log(probs + 1e-12))
-        
+
         return entropy
 
 
@@ -173,7 +300,7 @@ def _(attribution_scores, np, target_data):
         sorted_scores = np.sort(abs_scores)
         N = len(sorted_scores)
         cumulative_sum = np.cumsum(sorted_scores)
-        
+
         # Compute Gini using the standard formula
         gini_coeff = (2 / N) * np.sum((np.arange(1, N + 1) / N) * sorted_scores) - (np.sum(sorted_scores) / N)
         gini_coeff /= np.mean(sorted_scores)
