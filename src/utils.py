@@ -82,3 +82,32 @@ def load_config(config_path):
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
     return config
+
+def get_dataset_from_model(model, env_config, episodes, max_steps=500):
+    """
+    Collect states, actions and next states from a model in an environment.
+    """
+    env = gym.make(env_config["name"])
+    
+    X = []   # states
+    A = []   # actions
+    Xp = []  # next states
+
+    for _ in range(episodes):
+        state = env.reset()[0]
+        terminated = truncated = False
+        steps = 0
+        
+        while not (terminated or truncated) and steps < max_steps:
+            steps += 1
+            action = model.act(state)
+            next_state, _, terminated, truncated, _ = env.step(action)
+
+            X.append(state)
+            A.append(action)
+            Xp.append(next_state)
+
+            state = next_state
+    env.close()
+
+    return np.array(X), np.array(A), np.array(Xp)
