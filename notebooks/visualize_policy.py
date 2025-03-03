@@ -6,16 +6,18 @@ app = marimo.App(width="medium")
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md("""
-    # Visualizing the policy
-    We visualize the expert and imitation agent policies by visualizing each agents' decision boundary through a contour plot across a state meshgrid. Blue indicates action 0 (move left), and yellow indicates action 1 (move right).
-    We also plot a scatter plot of imitation agent training data located near the tuple $(x, x')$ (with range $\epsilon$).
+    mo.md(
+        """
+        # Visualizing the policy
+        We visualize the expert and imitation agent policies by visualizing each agents' decision boundary through a contour plot across a state meshgrid. Blue indicates action 0 (move left), and yellow indicates action 1 (move right).
+        We also plot a scatter plot of imitation agent training data located near the tuple $(x, x')$ (with range $\epsilon$).
 
-    We initially notice that the policies seem very similar.
-    However, as we move away from the initial centered state, we notice that the expert agent starts to have nonsensicle decision boundaries, whereas the imitation agent stays the same.
-    In particular, for example for $(x=-1.8, x'=1.0)$ we find that a new decision boundary appears, which leads to the inverted pendulum falling. 
-    We conclude that the imitation policy actually generalizes better, and overfits less to the original data than the expert agent, despite having the same architecture.
-    """)
+        We initially notice that the policies seem very similar.
+        However, as we move away from the initial centered state, we notice that the expert agent starts to have nonsensicle decision boundaries, whereas the imitation agent stays the same.
+        In particular, for example for $(x=-1.8, x'=1.0)$ we find that a new decision boundary appears, which leads to the inverted pendulum falling. 
+        We conclude that the imitation policy actually generalizes better, and overfits less to the original data than the expert agent, despite having the same architecture.
+        """
+    )
     return
 
 
@@ -111,14 +113,14 @@ def _(np, plt, slider_log10eps, slider_x, slider_xdot, training_data):
         #fixed_i, fixed_j = math.floor(len(grid[0]) / 2), math.floor(len(grid[1]) / 2)
         s1 = slider_x.value
         s2 = slider_xdot.value
-        
+
         # Create meshgrid for angle and angular velocity
         angle_grid = np.linspace(np.deg2rad(-12), np.deg2rad(12), 20)
         ang_vel_grid = np.linspace(np.deg2rad(-35), np.deg2rad(35), 20)#grid[2], grid[3]
         X, Y = np.meshgrid(angle_grid, ang_vel_grid)
         Z = np.array([[agent.act(np.array([s1, s2, xi, yi])) for xi, yi in zip(x_row, y_row)] 
                       for x_row, y_row in zip(X, Y)])
-        
+
         # Plot
         plt.figure(figsize=(5, 3))
         plt.contourf(X, Y, Z)
