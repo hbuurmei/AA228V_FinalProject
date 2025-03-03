@@ -1,4 +1,5 @@
 import numpy as np
+import argparse
 from pathlib import Path
 from tqdm import tqdm
 import torch
@@ -7,22 +8,41 @@ from trak import TRAKer
 from utils import load_config, MLP
 
 
-def run_data_attribution():
+def run_data_attribution(model_name):
     # Use GPU if available, otherwise use CPU
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    # Load the expert data
-    data_train = np.load("data/datasets/expert_data_train.npz")
-    data_target = np.load("data/datasets/BC_target_rollouts.npz")
-    X_train = torch.from_numpy(data_train["X"]).float()
-    y_train = torch.from_numpy(data_train["y"]).long()
-    X_target = torch.from_numpy(data_target["X"]).float()
-    y_target = torch.from_numpy(data_target["y"]).long()
-    train_dataset = TensorDataset(X_train, y_train)
-    target_dataset = TensorDataset(X_target, y_target)
-    train_loader = DataLoader(train_dataset, batch_size=200, shuffle=False)
-    target_loader = DataLoader(target_dataset, batch_size=100, shuffle=False)
+    # Load the data
+    if model_name == "dynamics_learner":
+        data_train = np.load("data/datasets/dl_data_train.npz")
+        data_target = np.load("data/datasets/dl_target_rollouts.npz")
+        X_train = torch.from_numpy(data_train["X"]).float()
+        A_train = torch.from_numpy(data_train["A"]).long()
+        Xp_train = torch.from_numpy(data_train["Xp"]).float()
+        inputs_train = torch.cat((X_train, A_train), dim=1)
+        labels_train = Xp_train
+        X_target = torch.from_numpy(data_target["X"]).float()
+        A_target = torch.from_numpy(data_target["A"]).long()
+        Xp_target = torch.from_numpy(data_target["Xp"]).float()
+        inputs_target = torch.cat((X_target, A_target), dim=1)
+        labels_target = Xp_target
+        train_dataset = TensorDataset(inputs_train, labels_train)
+        target_dataset = TensorDataset(inputs_target, labels_target)
+        train_loader = DataLoader(train_dataset, batch_size=100, shuffle=False)
+        target_loader = DataLoader(target_dataset, batch_size=50, shuffle=False)
+
+    elif model_name == "IL_agent":
+        data_train = np.load("data/datasets/expert_data_train.npz")
+        data_target = np.load("data/datasets/BC_target_rollouts.npz")
+        X_train = torch.from_numpy(data_train["X"]).float()
+        A_train = torch.from_numpy(data_train["A"]).long()
+        X_target = torch.from_numpy(data_target["X"]).float()
+        A_target = torch.from_numpy(data_target["A"]).long()
+        train_dataset = TensorDataset(X_train, A_train)
+        target_dataset = TensorDataset(X_target, A_target)
+        train_loader = DataLoader(train_dataset, batch_size=200, shuffle=False)
+        target_loader = DataLoader(target_dataset, batch_size=100, shuffle=False)
 
     # Get the model checkpoints
     checkpoints_dir = "data/models/checkpoints"
@@ -70,11 +90,20 @@ def run_data_attribution():
         for batch in target_loader:
             traker.score(batch=batch, num_samples=batch[0].shape[0])
     scores = traker.finalize_scores(exp_name=experiment_name)
-    print("Size of scores matrix:", scores.shape)
+    print("Shape of scores matrix:", scores.shape)
 
     # Save the scores
     np.savez_compressed(f"data/scores/{experiment_name}_scores.npz", scores=scores)
 
 
 if __name__ == "__main__":
-    run_data_attribution()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dynamics', action='store_true', help='Attribution for dynamics learner, default is for IL agent')
+    args = parser.parse_args()
+    if args.dynamics:
+        model_name = "dynamics_learner"
+    else:
+        model_name = "IL_agent"
+    print(f"Running attribution for {model_name}")
+
+    run_data_attribution(model_name)

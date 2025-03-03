@@ -125,8 +125,8 @@ def train_il_agent(agent_config, expert, env_config):
                 X_batch, A_batch = batch
                 agent0.batch_fit(X_batch, A_batch)
         if epoch == 100:
-            agent0.save_model(f"data/models/checkpoints/{agent_config["method"]}_policy_epoch{epoch}.pt")
-    agent0.save_model(f"data/models/checkpoints/{agent_config["method"]}_policy_epoch{epoch}.pt")
+            agent0.save_model(f"data/models/{agent_config["method"]}_policy_ckpts/{agent_config["method"]}_policy_epoch{epoch}.pt")
+    agent0.save_model(f"data/models/{agent_config["method"]}_policy_ckpts/{agent_config["method"]}_policy_epoch{epoch}.pt")
     
     if agent_config["method"] == "BC":
         # Behavioral Cloning (BC)
