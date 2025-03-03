@@ -124,7 +124,7 @@ def train_dynamics_learner(dl_config, agent, env_config):
         # Average batch loss for this epoch
         avg_epoch_loss = total_epoch_loss / num_batches
 
-        if epoch % 50 == 0:
+        if epoch % 20 == 0:
             print(f"DL epoch {epoch}: Avgerage Loss {avg_epoch_loss:.6f}")
 
     # Evaluate the dynamics learner
@@ -136,6 +136,14 @@ def train_dynamics_learner(dl_config, agent, env_config):
         test_target = torch.from_numpy(Xp_test).float().to(dl.device)
         test_loss = dl.criterion(test_output, test_target)
         print(f"DL test loss: {test_loss.item():.6f}")
+
+    # Collect data from the dynamics learner for data attribution
+    target_input = torch.cat((X_test, A_test), dim=1).to(dl.device)
+    target_output = dl.model(target_input)
+    np.savez_compressed("data/datasets/dl_target_rollouts.npz",
+                        X=X_test.cpu().numpy(),
+                        A=A_test.cpu().numpy(),
+                        Xp=target_output.detach().cpu().numpy())
 
     # Save the dynamics learner
     dl.save_model(f"data/models/dynamics_learner.pt")
