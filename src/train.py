@@ -41,7 +41,7 @@ def train_models():
 
     # Train dynamics learner
     if args.train_dynamics_learner:
-        train_dynamics_learner(dl_config, expert, env_config)
+        train_dynamics_learner(dl_config, env_config)
     else:
         dl = DynamicsLearner(dl_config)
         dl.load_model(f"data/models/dynamics_learner.pt")

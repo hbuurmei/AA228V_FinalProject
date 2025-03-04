@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
-from utils import MLP, get_dataset_from_model
+from utils import MLP, get_dataset_from_hyperrectangle
 
 
 class DynamicsLearner:
@@ -96,11 +96,12 @@ class DynamicsLearner:
         self.model.eval()
 
 
-def train_dynamics_learner(dl_config, agent, env_config):
-    # Collect training dataset for the dynamics learner
-    X_train, A_train, Xp_train = get_dataset_from_model(agent, env_config, episodes=dl_config["train_data_episodes"])
+def train_dynamics_learner(dl_config, env_config):
+    # Collect datasets for the dynamics learner
+    X_train, A_train, Xp_train = get_dataset_from_hyperrectangle(env_config, dl_config["train_num_samples"])
     np.savez_compressed("data/datasets/dl_data_train.npz", X=X_train, A=A_train, Xp=Xp_train)
-    X_test, A_test, Xp_test = get_dataset_from_model(agent, env_config, episodes=dl_config["test_data_episodes"])
+    
+    X_test, A_test, Xp_test = get_dataset_from_hyperrectangle(env_config, dl_config["test_num_samples"])
     np.savez_compressed("data/datasets/dl_data_test.npz", X=X_test, A=A_test, Xp=Xp_test)
 
     X_train = torch.from_numpy(X_train).float()

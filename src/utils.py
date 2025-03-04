@@ -111,3 +111,54 @@ def get_dataset_from_model(model, env_config, episodes, max_steps=500):
     env.close()
 
     return np.array(X), np.array(A), np.array(Xp)
+
+
+def get_dataset_from_hyperrectangle(env_config, num_samples=1000):
+    """
+    Create a dataset by sampling states from a hyperrectangle and random actions,
+    then collecting the corresponding next states.
+    """
+    env = gym.make(env_config["name"])
+
+    states_min = env_config["states_min"]
+    states_max = env_config["states_max"]
+    state_bounds = np.array([states_min, states_max]).T
+    
+    X = []   # states
+    A = []   # actions
+    Xp = []  # next states
+    
+    samples_collected = 0
+    while samples_collected < num_samples:
+        # Sample a random state from the hyperrectangle
+        sampled_state = np.array([
+            np.random.uniform(low=bounds[0], high=bounds[1]) 
+            for bounds in state_bounds
+        ])
+        
+        # Sample a random action (0 or 1)
+        action = np.random.choice([0, 1])
+        
+        try:
+            # Reset environment and force the state
+            env.reset()
+            env.unwrapped.state = sampled_state
+            
+            # Take the action and observe the next state
+            next_state, _, _, _, _ = env.step(action)
+            
+            # If the step was successful, add it to our dataset
+            X.append(sampled_state)
+            A.append(action)
+            Xp.append(next_state)
+            
+            samples_collected += 1
+                
+        except Exception as e:
+            # Some sampled states might not be valid for the environment
+            print(f"Skipping invalid state: {sampled_state}. Error: {e}")
+            continue
+    
+    env.close()
+    
+    return np.array(X), np.array(A), np.array(Xp)
