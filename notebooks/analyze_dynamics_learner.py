@@ -167,15 +167,56 @@ def _(np):
     return (attribution_scores,)
 
 
-@app.cell
-def _(attribution_scores, np, plt):
-    plt.hist(np.log10(np.abs(attribution_scores[:, 0])+1e-6))
-    plt.show()
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(
+        r"""
+        ### First metric: **entropy**
+
+        First we convert the attribution scores to valid probability, i.e. the probability of training sample $i$ is equal to $p_i=\frac{\left|s_i\right|}{\sum_j\left|s_j\right|}$, where $s_i$ denotes the corresponding score.
+
+        Then, we compute the entropy according to $H=-\sum_{i=1}^N p_i \log p_i$, where $N$ is the size of our training dataset.
+
+        _Higher entropy_: influence is spread across many training points.
+        _Lower entropy_: influence is concentrated on a few training points.### First metric: **entropy**
+
+        First we convert the attribution scores to valid probability, i.e. the probability of training sample $i$ is equal to $p_i=\frac{\left|s_i\right|}{\sum_j\left|s_j\right|}$, where $s_i$ denotes the corresponding score.
+
+        Then, we compute the entropy according to $H=-\sum_{i=1}^N p_i \log p_i$, where $N$ is the size of our training dataset.
+
+        _Higher entropy_: influence is spread across many training points.
+        _Lower entropy_: influence is concentrated on a few training points.
+        """
+    )
     return
 
 
 @app.cell
-def _():
+def _(attribution_scores, np):
+    def attribution_entropy(scores):
+        """
+        Compute entropy of attribution scores.
+        """
+        abs_scores = np.abs(scores)
+        probs = abs_scores / np.sum(abs_scores)
+
+        # Avoid log(0) by setting p log p = 0 when p = 0
+        entropy = -np.sum(probs * np.log(probs + 1e-12))
+
+        return entropy
+
+
+    entropies = [attribution_entropy(attribution_scores[:, i]) 
+                 for i in range(attribution_scores.shape[1])]
+    return attribution_entropy, entropies
+
+
+@app.cell(hide_code=True)
+def _(entropies, plt):
+    plt.hist(entropies, bins=20, edgecolor="black", alpha=0.75)
+    plt.xlabel("Entropy")
+    plt.ylabel("Frequency")
+    plt.title("Distribution of Attribution Entropy Across Targets")
     return
 
 
