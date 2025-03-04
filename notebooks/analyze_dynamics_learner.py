@@ -53,22 +53,24 @@ def _(dynamics_learner, gym, load_config, np):
         X_true_ep = []
         X_pred_ep = []
         A_rand_ep = []
-        
+
         terminated = truncated = False
         steps = 0
         while not (terminated or truncated) and steps < max_steps:
             steps += 1
             act_rand = np.random.choice([0, 1])
             next_state_true, _, terminated, truncated, _ = env.step(act_rand)
-            next_state_pred = dynamics_learner.predict(state_pred.reshape(1, -1), np.array(act_rand).reshape(1, -1)).numpy().squeeze()
-            
+            dl_output = dynamics_learner.predict(state_pred.reshape(1, -1), np.array(act_rand).reshape(1, -1)).numpy().squeeze()
+            next_state_pred = dl_output[:4]
+            next_state_uncertainty = dl_output[4:]
+
             X_true_ep.append(state_true)
             X_pred_ep.append(state_pred)
             A_rand_ep.append(act_rand)
 
             state_true = next_state_true
             state_pred = next_state_pred
-        
+
         X_true.append(np.array(X_true_ep))
         X_pred.append(np.array(X_pred_ep))
         A_rand.append(np.array(A_rand_ep))
@@ -82,12 +84,14 @@ def _(dynamics_learner, gym, load_config, np):
         X_true,
         X_true_ep,
         act_rand,
+        dl_output,
         env,
         env_config,
         episodes,
         max_steps,
         next_state_pred,
         next_state_true,
+        next_state_uncertainty,
         state_pred,
         state_true,
         steps,
@@ -96,7 +100,7 @@ def _(dynamics_learner, gym, load_config, np):
     )
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(X_pred, X_true, episodes, np, plt):
     # We plot the true state propagation and the prediction for several episodes
     state_names = ["Cart Position", "Cart Velocity", "Pole Angle", "Pole Angular Velocity"]
@@ -109,7 +113,7 @@ def _(X_pred, X_true, episodes, np, plt):
         x_true = X_true[ep]
         x_pred = X_pred[ep]
         steps_range = np.arange(len(x_true))
-        
+
         for state_idx in range(4):
             ax = axes[ep, state_idx]
             ax.plot(steps_range, x_true[:, state_idx], 'b-', label='True State', linewidth=2)        
@@ -117,7 +121,7 @@ def _(X_pred, X_true, episodes, np, plt):
             ax.set_title(f'Episode {ep+1}: {state_names[state_idx]}')
             ax.set_xlabel('Time Steps')
             ax.set_ylabel('State Value')
-            
+
             # Only add legend to the first row to avoid clutter
             if ep == 0:
                 ax.legend()            

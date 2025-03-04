@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
@@ -14,9 +13,11 @@ class DynamicsLearner:
     def __init__(self, dl_config, seed=0):
         torch.manual_seed(seed)
         self.extract_config(dl_config)
-        self.model = MLP(input_dim=self.input_dim, hidden_dims=self.hidden_dims, output_dim=self.output_dim)
+        self.model = MLP(input_dim=self.input_dim,
+                         hidden_dims=self.hidden_dims,
+                         output_dim=self.output_dim,
+                         predict_uncertainties=True)
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.alpha)
-        self.criterion = nn.MSELoss()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)    
 
@@ -26,6 +27,13 @@ class DynamicsLearner:
         """
         for key, value in config.items():
             setattr(self, key, value)
+    
+    def criterion(self, mean, log_var, target):
+        """
+        Negative log-likelihood loss for multivariate Gaussian with diagonal covariance.
+        """
+        precision = torch.exp(-log_var)
+        return torch.mean(torch.sum(precision * (target - mean) ** 2 + log_var, dim=1))
     
     def predict(self, state, action):
         """
@@ -61,7 +69,9 @@ class DynamicsLearner:
         
         self.optimizer.zero_grad()
         output = self.model(input)
-        loss = self.criterion(output, target)
+        mean = output[:, :self.output_dim]
+        log_var = output[:, self.output_dim:]
+        loss = self.criterion(mean, log_var, target)
         loss.backward()
         self.optimizer.step()
     
@@ -77,7 +87,9 @@ class DynamicsLearner:
 
         self.optimizer.zero_grad()
         output = self.model(input)
-        loss = self.criterion(output, Xp)
+        mean = output[:, :self.output_dim]
+        log_var = output[:, self.output_dim:]
+        loss = self.criterion(mean, log_var, Xp)
         loss.backward()
         self.optimizer.step()
         return loss.item()
@@ -125,7 +137,7 @@ def train_dynamics_learner(dl_config, env_config):
         # Average batch loss for this epoch
         avg_epoch_loss = total_epoch_loss / num_batches
 
-        if epoch % 20 == 0:
+        if epoch % 50 == 0:
             print(f"DL epoch {epoch}: Avgerage Loss {avg_epoch_loss:.6f}")
 
     # Evaluate the dynamics learner
@@ -133,9 +145,11 @@ def train_dynamics_learner(dl_config, env_config):
         X_test = torch.from_numpy(X_test).float()
         A_test = torch.from_numpy(A_test).long().reshape(-1, 1)
         test_input = torch.cat((X_test, A_test), dim=1).to(dl.device)
-        test_output = dl.model(test_input)
         test_target = torch.from_numpy(Xp_test).float().to(dl.device)
-        test_loss = dl.criterion(test_output, test_target)
+        test_output = dl.model(test_input)
+        test_mean = test_output[:, :dl.output_dim]
+        test_log_var = test_output[:, dl.output_dim:]
+        test_loss = dl.criterion(test_mean, test_log_var, test_target)
         print(f"DL test loss: {test_loss.item():.6f}")
 
     # Collect data from the dynamics learner for data attribution

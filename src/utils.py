@@ -23,15 +23,16 @@ def is_in_hull(point, hull, eps=None):
 
 class MLP(nn.Module):
     """
-    A generic multi-layer perceptron (MLP).
+    A generic multi-layer perceptron (MLP) with optional uncertainty prediction.
     """
     def __init__(self, 
                  input_dim: int, 
                  hidden_dims: list, 
                  output_dim: int, 
-                 activation=nn.ReLU):
+                 activation=nn.ReLU,
+                 predict_uncertainties=False):
         super(MLP, self).__init__()
-        
+
         layers = []
         in_dim = input_dim
         
@@ -41,14 +42,43 @@ class MLP(nn.Module):
             layers.append(activation())
             in_dim = h_dim
         
-        # Add final output layer
-        layers.append(nn.Linear(in_dim, output_dim))
-        
+        # Output layer(s)
+        if predict_uncertainties:
+            # Single output head for both mean and log variance
+            layers.append(nn.Linear(in_dim, 2 * output_dim))
+        else:
+            # Standard output head for mean only
+            layers.append(nn.Linear(in_dim, output_dim))
+
         # Pack all layers into a Sequential container
         self.layers = nn.Sequential(*layers)
     
     def forward(self, x):
         return self.layers(x)
+
+
+class UncertaintyModel(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim):
+        super().__init__()
+        self.backbone = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU()
+        )
+        # Single output head predicting both mean and log variance
+        self.output_head = nn.Linear(hidden_dim, 2 * output_dim)
+        self.output_dim = output_dim
+    
+    def forward(self, x):
+        features = self.backbone(x)
+        outputs = self.output_head(features)
+        
+        # Split the outputs into mean and log variance
+        mean = outputs[:, :self.output_dim]
+        log_var = outputs[:, self.output_dim:]
+        
+        return mean, log_var
 
 
 def policy_rollout(agent, env_config, N=1, render=False):

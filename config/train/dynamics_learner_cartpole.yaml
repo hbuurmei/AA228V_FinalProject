@@ -2,7 +2,7 @@ alpha: 0.001
 input_dim: 5
 hidden_dims: [24, 24]
 output_dim: 4
-max_epochs: 100
+max_epochs: 500
 batch_size: 64
 train_num_samples: 5000
 test_num_samples: 200
