@@ -14,13 +14,26 @@ def _(mo):
 def _():
     import marimo as mo
     import numpy as np
+    import pandas as pd
+    import altair as alt
     import torch
     import gymnasium as gym
     import matplotlib.pyplot as plt
     import sys; sys.path.append("src")
     from dynamics_learning import DynamicsLearner
     from utils import load_config
-    return DynamicsLearner, gym, load_config, mo, np, plt, sys, torch
+    return (
+        DynamicsLearner,
+        alt,
+        gym,
+        load_config,
+        mo,
+        np,
+        pd,
+        plt,
+        sys,
+        torch,
+    )
 
 
 @app.cell
@@ -140,6 +153,25 @@ def _(X_pred, X_true, episodes, np, plt):
         x_pred,
         x_true,
     )
+
+
+@app.cell
+def _(np):
+    attribution_scores = np.load("data/scores/dynamics_learner_scores.npz")["scores"]
+
+    print(f"""
+            Number of training data points: {attribution_scores.shape[0]}
+            Number of target data points: {attribution_scores.shape[1]}
+            Percentage of nonzero elements in DA scores matrix: {np.count_nonzero(attribution_scores) / np.prod(attribution_scores.shape) * 100:.2f}%
+    """)
+    return (attribution_scores,)
+
+
+@app.cell
+def _(attribution_scores, np, plt):
+    plt.hist(np.log10(np.abs(attribution_scores[:, 0])+1e-6))
+    plt.show()
+    return
 
 
 @app.cell

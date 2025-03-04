@@ -155,10 +155,12 @@ def train_dynamics_learner(dl_config, env_config):
     # Collect data from the dynamics learner for data attribution
     target_input = torch.cat((X_test, A_test), dim=1).to(dl.device)
     target_output = dl.model(target_input)
+    target_mean = target_output[:, :dl.output_dim]
+    target_log_var = target_output[:, dl.output_dim:]
     np.savez_compressed("data/datasets/dl_target_rollouts.npz",
                         X=X_test.cpu().numpy(),
                         A=A_test.cpu().numpy(),
-                        Xp=target_output.detach().cpu().numpy())
+                        Xp=target_mean.detach().cpu().numpy())
 
     # Save the dynamics learner
     dl.save_model(f"data/models/dynamics_learner.pt")
