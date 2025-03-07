@@ -1,4 +1,5 @@
 import numpy as np
+from datetime import datetime
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -13,7 +14,8 @@ class ILAgent:
     """
     Imitation Learning Agent with differentiable classifier.
     """
-    def __init__(self, agent_config, seed=0):
+    def __init__(self, agent_config):
+        seed=int(agent_config["seed"])
         torch.manual_seed(seed)
         self.extract_config(agent_config)
         self.model = MLP(input_dim=self.input_dim, hidden_dims=self.hidden_dims, output_dim=self.output_dim)
@@ -74,6 +76,7 @@ class ILAgent:
         loss = self.criterion(output, y)
         loss.backward()
         self.optimizer.step()
+        return loss
 
     def act(self, state):
         """
@@ -123,6 +126,8 @@ def train_il_agent(agent_config, expert, env_config, extra_data_config: Optional
     """
     # Collect dataset from the expert for both training and testing
     X_train, A_train, _ = get_dataset_from_model(expert, env_config, episodes=agent_config["train_data_episodes"])
+    mask = torch.rand_like(torch.tensor(A_train).float()) < 0.1
+    A_train[mask] = 1 - A_train[mask]
     np.savez_compressed("data/datasets/expert_data_train.npz", X=X_train, A=A_train)
     X_test, A_test, _ = get_dataset_from_model(expert, env_config, episodes=agent_config["test_data_episodes"])
     np.savez_compressed("data/datasets/expert_data_test.npz", X=X_test, A=A_test)
@@ -131,6 +136,8 @@ def train_il_agent(agent_config, expert, env_config, extra_data_config: Optional
     if extra_data_config is not None:
         print(f"Adding {extra_data_config.num_samples} synthetic data points...")
         X_extra, A_extra = make_extra_data(extra_data_config)
+        mask = torch.rand_like(torch.tensor(A_extra).float()) < 0.5
+        A_extra[mask] = 1 - A_extra[mask]
         X_train = np.concatenate([X_train, X_extra])
         A_train = np.concatenate([A_train, A_extra])
         print(f"Training data size after augmentation: {len(X_train)}")
@@ -141,14 +148,17 @@ def train_il_agent(agent_config, expert, env_config, extra_data_config: Optional
     train_loader = DataLoader(train_dataset, batch_size=agent_config["batch_size"], shuffle=True)
 
     # Saving intermediate models for data attribution
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     agent0 = ILAgent(agent_config)
     for epoch in range(agent_config["max_epochs"]):
         for batch in train_loader:
                 X_batch, A_batch = batch
-                agent0.batch_fit(X_batch, A_batch)
+                loss = agent0.batch_fit(X_batch, A_batch)
         if epoch == 100:
-            agent0.save_model(f"data/models/{agent_config["method"]}_policy_ckpts/{agent_config["method"]}_policy_epoch{epoch}.pt")
-    agent0.save_model(f"data/models/{agent_config["method"]}_policy_ckpts/{agent_config["method"]}_policy_epoch{epoch}.pt")
+            agent0.save_model(f"data/models/{agent_config["method"]}_policy_ckpts/{agent_config["method"]}_policy_epoch{epoch}_{timestamp}.pt")
+        if epoch % 20 == 0:
+            print(f"Loss: {loss}")
+    agent0.save_model(f"data/models/{agent_config["method"]}_policy_ckpts/{agent_config["method"]}_policy_epoch{epoch}_{timestamp}.pt")
     
     if agent_config["method"] == "BC":
         # Behavioral Cloning (BC)

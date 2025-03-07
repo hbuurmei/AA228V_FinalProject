@@ -4,4 +4,4 @@ eps: 0.05                 # Small region around the centroid
 shape: spherical          # Sample from a sphere
 dim: 4                    # State dimension for cartpole
 label: 1                  # Action 1 (push right)
-num_samples: 200          # Number of synthetic samples
+num_samples: 20          # Number of synthetic samples
