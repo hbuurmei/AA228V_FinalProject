@@ -231,34 +231,39 @@ def make_extra_data(config: ExtraDataConfig):
     y : np.ndarray
         Labels for the generated data, all set to config.label
     """
+    # Save the current random state
+    rng_state = np.random.get_state()
+    
     # Set random seed for reproducibility
     np.random.seed(config.seed)
     
-    # Convert to numpy array for calculations
-    centroid = np.array(config.centroid)
+    try:
+        # Convert to numpy array for calculations
+        centroid = np.array(config.centroid)
+        
+        # Initialize data array
+        X = np.zeros((config.num_samples, config.dim))
+        
+        if config.shape == "rectangular":
+            # For rectangular shape, sample uniformly within a hypercube
+            for i in range(config.num_samples):
+                # Sample each dimension uniformly within [centroid[d] - eps, centroid[d] + eps]
+                for d in range(config.dim):
+                    X[i, d] = np.random.uniform(centroid[d] - config.eps, centroid[d] + config.eps)
+        
+        elif config.shape == "spherical":
+            # For spherical shape, sample uniformly within a hypersphere
+            for i in range(config.num_samples):
+                while True:
+                    # Sample from a cube and reject if outside the sphere
+                    point = np.random.uniform(-config.eps, config.eps, config.dim)
+                    if np.linalg.norm(point) <= config.eps:  # Check if point is within the sphere
+                        X[i] = centroid + point
+                        break
     
-    # Initialize data array
-    X = np.zeros((config.num_samples, config.dim))
-    
-    if config.shape == "rectangular":
-        # For rectangular shape, sample uniformly within a hypercube
-        for i in range(config.num_samples):
-            # Sample each dimension uniformly within [centroid[d] - eps, centroid[d] + eps]
-            for d in range(config.dim):
-                X[i, d] = np.random.uniform(centroid[d] - config.eps, centroid[d] + config.eps)
-    
-    elif config.shape == "spherical":
-        # For spherical shape, sample uniformly within a hypersphere
-        for i in range(config.num_samples):
-            while True:
-                # Sample from a cube and reject if outside the sphere
-                point = np.random.uniform(-config.eps, config.eps, config.dim)
-                if np.linalg.norm(point) <= config.eps:  # Check if point is within the sphere
-                    X[i] = centroid + point
-                    break
-    
-    # Reset random seed to avoid affecting other code
-    np.random.seed(None)
+    finally:
+        # Restore the original random state
+        np.random.set_state(rng_state)
     
     # Create labels array (all the same value)
     y = np.full(config.num_samples, config.label, dtype=int)
