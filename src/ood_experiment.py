@@ -35,6 +35,7 @@ def run_ood_experiment():
     for model_size in model_sizes:
         dl_config = dl_default_config.copy()
         dl_config["hidden_dims"] = model_size
+        dl_config["max_epochs"] = 250 * len(model_size)
         model_name = f"dynamics_learner_{'_'.join(str(size) for size in model_size)}"
 
         # Train dynamics learner
@@ -45,14 +46,15 @@ def run_ood_experiment():
         scores = np.load(f"data/scores/{model_name}_scores.npz")["scores"]
 
         # For each column, get the top 10 indices with largest absolute values
-        top_indices = np.argsort(np.abs(scores), axis=0)[-10:]
+        top_size = 20
+        top_indices = np.argsort(np.abs(scores), axis=0)[-top_size:]
         training_data = np.load("data/datasets/dl_data_train.npz")
         training_states = training_data["X"]
         target_data = np.load("data/datasets/dl_target_rollouts.npz")
         target_states = target_data["X"]
 
         # Shape: (10, num_states, num_target_data)
-        important_states = np.zeros((10, target_states.shape[1], target_states.shape[0]))
+        important_states = np.zeros((top_size, target_states.shape[1], target_states.shape[0]))
         for i in range(target_states.shape[0]):
             indices = top_indices[:, i].squeeze().tolist()
             important_states[:, :, i] = training_states[indices]

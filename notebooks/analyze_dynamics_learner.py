@@ -330,6 +330,12 @@ def _(attribution_scores, np, plt, target_data, training_data):
 
 
 @app.cell
+def _(training_data):
+    training_data["X"]
+    return
+
+
+@app.cell
 def _():
     return
 

@@ -192,3 +192,29 @@ def get_dataset_from_hyperrectangle(env_config, num_samples=1000):
     env.close()
     
     return np.array(X), np.array(A), np.array(Xp)
+
+
+def extract_states_in_region(X_train, A_train, Xp_train, region_bounds):
+    """
+    Extract states that fall within a specified rectangular region and remove them from the original dataset.
+    """
+    # Ensure region_bounds matches the number of state dimensions
+    assert len(region_bounds) == X_train.shape[1], "Number of region bounds must match number of state dimensions"
+    
+    # Initialize mask to track which states are inside the region
+    mask = np.ones(X_train.shape[0], dtype=bool)
+    
+    # Check each dimension
+    for dim, (min_val, max_val) in enumerate(region_bounds):
+        # Update mask to identify points within bounds for this dimension
+        mask = mask & (X_train[:, dim] >= min_val) & (X_train[:, dim] <= max_val)
+    
+    # Extract states within the region
+    extracted_states = X_train[mask]
+    
+    # Get the remaining states, actions and next states
+    remaining_states = X_train[~mask]
+    remaining_actions = A_train[~mask]
+    remaining_next_states = Xp_train[~mask]
+    
+    return extracted_states, remaining_states, remaining_actions, remaining_next_states

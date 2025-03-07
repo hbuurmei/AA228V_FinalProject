@@ -3,7 +3,7 @@ import torch
 import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
-from utils import MLP, get_dataset_from_hyperrectangle
+from utils import MLP, get_dataset_from_hyperrectangle, extract_states_in_region
 
 
 class DynamicsLearner:
@@ -111,13 +111,21 @@ class DynamicsLearner:
 def train_dynamics_learner(dl_config, env_config, model_name="dynamics_learner", save_model=True):
     # Collect training data
     X_train, A_train, Xp_train = get_dataset_from_hyperrectangle(env_config, dl_config["train_num_samples"])
-    np.savez_compressed("data/datasets/dl_data_train.npz", X=X_train, A=A_train, Xp=Xp_train)
     
     # Collect test data
     X_test, A_test, Xp_test = get_dataset_from_hyperrectangle(env_config, dl_config["test_num_samples"])
-    np.savez_compressed("data/datasets/dl_data_test.npz", X=X_test, A=A_test, Xp=Xp_test)
 
-    # Collect OOD target data
+    # Define OOD region and remove it from training data and store it as target data
+    ood_bounds = [(-0.5, -0.0),
+                  (-1.0, 0.0),
+                  (0.0, 1.0),
+                  (0.0, 1.0)]
+    ood_states, X_train, A_train, Xp_train = extract_states_in_region(X_train, A_train, Xp_train, ood_bounds)
+    print(len(ood_states), "states in OOD region")
+    return 0
+    
+    np.savez_compressed("data/datasets/dl_data_train.npz", X=X_train, A=A_train, Xp=Xp_train)
+    np.savez_compressed("data/datasets/dl_data_test.npz", X=X_test, A=A_test, Xp=Xp_test)
 
     X_train = torch.from_numpy(X_train).float()
     A_train = torch.from_numpy(A_train).long()
@@ -141,7 +149,7 @@ def train_dynamics_learner(dl_config, env_config, model_name="dynamics_learner",
         avg_epoch_loss = total_epoch_loss / num_batches
 
         if epoch % 100 == 0:
-            print(f"DL epoch {epoch}: Avgerage Loss {avg_epoch_loss:.3f}")
+            print(f"DL epoch {epoch}: Average Loss {avg_epoch_loss:.3f}")
 
     # Evaluate the dynamics learner
     with torch.no_grad():
