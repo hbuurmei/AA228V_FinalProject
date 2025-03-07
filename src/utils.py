@@ -2,6 +2,7 @@ import yaml
 import gymnasium as gym
 import numpy as np
 import torch.nn as nn
+from models import ExtraDataConfig
 
 
 def is_in_hull(point, hull, eps=None):
@@ -194,61 +195,47 @@ def get_dataset_from_hyperrectangle(env_config, num_samples=1000):
     return np.array(X), np.array(A), np.array(Xp)
 
 
-def make_extra_data(config):
+def make_extra_data(config: ExtraDataConfig):
     """
     Generate synthetic data based on the provided configuration.
     
     Parameters:
     -----------
-    config : dict
-        Configuration dictionary with the following keys:
-        - centroid: list or np.ndarray, center point of the shape
-        - eps: float, radius (for spherical) or half-width (for rectangular)
-        - shape: str, 'rectangular' or 'spherical'
-        - dim: int, dimensionality of the data
-        - label: int, label to assign to all generated points
-        - num_samples: int, number of samples to generate
+    config : ExtraDataConfig
+        Configuration for generating synthetic data
     
     Returns:
     --------
     X : np.ndarray
         Generated feature data with shape (num_samples, dim)
     y : np.ndarray
-        Labels for the generated data, all set to config['label']
+        Labels for the generated data, all set to config.label
     """
-    centroid = np.array(config['centroid'])
-    eps = config['eps']
-    shape = config['shape']
-    dim = config['dim']
-    label = config['label']
-    num_samples = config['num_samples']
-    
-    # Validate inputs
-    assert len(centroid) == dim, f"Centroid dimension ({len(centroid)}) must match specified dimension ({dim})"
-    assert shape in ['rectangular', 'spherical'], f"Shape must be 'rectangular' or 'spherical', got {shape}"
+    # Convert to numpy array for calculations
+    centroid = np.array(config.centroid)
     
     # Initialize data array
-    X = np.zeros((num_samples, dim))
+    X = np.zeros((config.num_samples, config.dim))
     
-    if shape == 'rectangular':
+    if config.shape == "rectangular":
         # For rectangular shape, sample uniformly within a hypercube
-        for i in range(num_samples):
+        for i in range(config.num_samples):
             # Sample each dimension uniformly within [centroid[d] - eps, centroid[d] + eps]
-            for d in range(dim):
-                X[i, d] = np.random.uniform(centroid[d] - eps, centroid[d] + eps)
+            for d in range(config.dim):
+                X[i, d] = np.random.uniform(centroid[d] - config.eps, centroid[d] + config.eps)
     
-    elif shape == 'spherical':
+    elif config.shape == "spherical":
         # For spherical shape, sample uniformly within a hypersphere
-        for i in range(num_samples):
+        for i in range(config.num_samples):
             while True:
                 # Sample from a cube and reject if outside the sphere
-                point = np.random.uniform(-eps, eps, dim)
-                if np.linalg.norm(point) <= eps:  # Check if point is within the sphere
+                point = np.random.uniform(-config.eps, config.eps, config.dim)
+                if np.linalg.norm(point) <= config.eps:  # Check if point is within the sphere
                     X[i] = centroid + point
                     break
     
     # Create labels array (all the same value)
-    y = np.full(num_samples, label, dtype=int)
+    y = np.full(config.num_samples, config.label, dtype=int)
     
     return X, y
 

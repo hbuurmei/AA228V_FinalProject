@@ -3,6 +3,7 @@ from reinforcement_learning import RLAgent, train_rl_agent
 from imitation_learning import ILAgent, train_il_agent
 from dynamics_learning import DynamicsLearner, train_dynamics_learner
 from utils import load_config, policy_rollout
+from models import ExtraDataConfig, ShapeType
 
 
 def train_models():
@@ -39,14 +40,14 @@ def train_models():
         extra_data_config = None
         
         # Example: Add synthetic data around a specific state with "push right" action
-        # extra_data_config = {
-        #     'centroid': [0, 0, 0.1, 0],  # [x, x_dot, theta, theta_dot] - slight tilt
-        #     'eps': 0.05,                  # Small region around the centroid
-        #     'shape': 'spherical',         # Sample from a sphere
-        #     'dim': 4,                     # State dimension for cartpole
-        #     'label': 1,                   # Action 1 (push right)
-        #     'num_samples': 200            # Number of synthetic samples
-        # }
+        # extra_data_config = ExtraDataConfig(
+        #     centroid=[0, 0, 0.1, 0],  # [x, x_dot, theta, theta_dot] - slight tilt
+        #     eps=0.05,                 # Small region around the centroid
+        #     shape=ShapeType.SPHERICAL,  # Sample from a sphere
+        #     dim=4,                    # State dimension for cartpole
+        #     label=1,                  # Action 1 (push right)
+        #     num_samples=200           # Number of synthetic samples
+        # )
         
         # Pass the extra_data_config as a separate parameter
         agent, _ = train_il_agent(il_agent_config, expert, env_config, extra_data_config)

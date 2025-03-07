@@ -4,7 +4,9 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
+from typing import Optional
 from utils import MLP, policy_rollout, get_dataset_from_model, make_extra_data
+from models import ExtraDataConfig
 
 
 class ILAgent:
@@ -103,7 +105,7 @@ def label_dataset_with_model(model, X):
     return y
 
 
-def train_il_agent(agent_config, expert, env_config, extra_data_config=None):
+def train_il_agent(agent_config, expert, env_config, extra_data_config: Optional[ExtraDataConfig] = None):
     """
     Train an Imitation Learning agent on expert data.
     
@@ -115,7 +117,7 @@ def train_il_agent(agent_config, expert, env_config, extra_data_config=None):
         Expert policy to imitate
     env_config : dict
         Environment configuration
-    extra_data_config : dict, optional
+    extra_data_config : ExtraDataConfig, optional
         Configuration for generating extra synthetic data
         If provided, synthetic data will be added to the training set
     """
