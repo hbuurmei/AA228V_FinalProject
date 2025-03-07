@@ -34,7 +34,9 @@ def train_models():
     
     # Train imitation learning agent
     if args.train_student:
-        agent, _ = train_il_agent(il_agent_config, expert, env_config)
+        # Check if extra data configuration is provided
+        extra_data_config = il_agent_config.get("extra_data_config", None)
+        agent, _ = train_il_agent(il_agent_config, expert, env_config, extra_data_config)
     else:
         agent = ILAgent(il_agent_config)
         agent.load_model(f"data/models/{il_agent_config["method"]}_policy.pt")
