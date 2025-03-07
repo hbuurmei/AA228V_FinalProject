@@ -21,6 +21,7 @@ class ExtraDataConfig(BaseModel):
         dim: Dimensionality of the data
         label: Label to assign to all generated points
         num_samples: Number of samples to generate
+        seed: Random seed for reproducibility
     """
     centroid: List[float] = Field(..., description="Center point of the shape")
     eps: float = Field(..., gt=0, description="Radius (spherical) or half-width (rectangular)")
@@ -28,6 +29,7 @@ class ExtraDataConfig(BaseModel):
     dim: int = Field(..., gt=0, description="Dimensionality of the data")
     label: int = Field(..., ge=0, description="Label to assign to all generated points")
     num_samples: int = Field(..., gt=0, description="Number of samples to generate")
+    seed: int = Field(default=42, description="Random seed for reproducibility")
     
     @validator('centroid')
     def validate_centroid_dim(cls, v, values):

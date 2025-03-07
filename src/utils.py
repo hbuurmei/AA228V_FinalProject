@@ -231,6 +231,9 @@ def make_extra_data(config: ExtraDataConfig):
     y : np.ndarray
         Labels for the generated data, all set to config.label
     """
+    # Set random seed for reproducibility
+    np.random.seed(config.seed)
+    
     # Convert to numpy array for calculations
     centroid = np.array(config.centroid)
     
@@ -253,6 +256,9 @@ def make_extra_data(config: ExtraDataConfig):
                 if np.linalg.norm(point) <= config.eps:  # Check if point is within the sphere
                     X[i] = centroid + point
                     break
+    
+    # Reset random seed to avoid affecting other code
+    np.random.seed(None)
     
     # Create labels array (all the same value)
     y = np.full(config.num_samples, config.label, dtype=int)
