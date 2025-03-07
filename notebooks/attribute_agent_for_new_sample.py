@@ -25,6 +25,8 @@ def _():
         TRAKer,
         TensorDataset,
         load_config,
+        load_extra_data_config,
+        make_extra_data,
         mo,
         np,
         plt,
@@ -42,11 +44,27 @@ def _(torch):
 
 
 @app.cell
-def _(DataLoader, TensorDataset, np, torch):
+def _(load_extra_data_config, make_extra_data, torch):
+    # Load extra data configuration
+    extra_data_config = load_extra_data_config("config/extra_data/cartpole_tilt_left.yaml")
+    print(f"Loaded extra data config: {extra_data_config.num_samples} samples at {extra_data_config.centroid}")
+
+    # Generate synthetic data
+    X_extra, A_extra = map(torch.tensor, make_extra_data(extra_data_config))
+    print(f"Generated {len(X_extra)} synthetic data points with action label: {extra_data_config.label}")
+    return A_extra, X_extra, extra_data_config
+
+
+@app.cell
+def _(A_extra, DataLoader, TensorDataset, X_extra, np, torch):
     data_train = np.load("data/datasets/expert_data_train.npz")
     data_target = np.load("data/datasets/BC_target_rollouts.npz")
     X_train = torch.from_numpy(data_train["X"]).float()
     A_train = torch.from_numpy(data_train["A"]).long()
+
+    X_train = torch.concatenate([X_train, X_extra])
+    A_train = torch.concatenate([A_train, A_extra])
+
     X_target = torch.from_numpy(data_target["X"]).float()
     A_target = torch.from_numpy(data_target["A"]).long()
     train_dataset = TensorDataset(X_train, A_train)
@@ -166,21 +184,6 @@ def _(np, scores):
     np.sort(scores[:, 0])
     return
 
-@app.cell
-def _():
-    import sys; sys.path.append("src")
-    from utils import load_extra_data_config, make_extra_data
-    
-    # Load extra data configuration
-    extra_data_config = load_extra_data_config("config/extra_data/cartpole_tilt_left.yaml")
-    print(f"Loaded extra data config: {extra_data_config.num_samples} samples at {extra_data_config.centroid}")
-    
-    # Generate synthetic data
-    X_extra, A_extra = make_extra_data(extra_data_config)
-    print(f"Generated {len(X_extra)} synthetic data points with action label: {extra_data_config.label}")
-    
-    return extra_data_config, X_extra, A_extra
-
 
 @app.cell
 def _(np, plt, slider_log10eps, slider_x, slider_xdot, training_data):
@@ -265,8 +268,8 @@ def _(batch_ref):
 
 
 @app.cell
-def _(load_config, np):
-    training_data = np.load("data/datasets/expert_data_train.npz")["X"]
+def _(X_train, load_config):
+    training_data = X_train
 
     env_config = load_config("config/env/cartpole.yaml")
     return env_config, training_data
