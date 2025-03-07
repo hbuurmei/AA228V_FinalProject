@@ -34,8 +34,17 @@ def train_models():
     
     # Train imitation learning agent
     if args.train_student:
-        # Check if extra data configuration is provided
-        extra_data_config = il_agent_config.get("extra_data_config", None)
+        # You can define extra_data_config here if needed
+        extra_data_config = None
+        # Example extra_data_config:
+        # extra_data_config = {
+        #     'centroid': [0, 0, 0, 0],  # For cartpole: [x, x_dot, theta, theta_dot]
+        #     'eps': 0.1,
+        #     'shape': 'spherical',
+        #     'dim': 4,
+        #     'label': 1,
+        #     'num_samples': 100
+        # }
         agent, _ = train_il_agent(il_agent_config, expert, env_config, extra_data_config)
     else:
         agent = ILAgent(il_agent_config)
