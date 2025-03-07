@@ -158,13 +158,36 @@ def _(X_pred, X_true, episodes, np, plt):
 @app.cell
 def _(np):
     attribution_scores = np.load("data/scores/dynamics_learner_scores.npz")["scores"]
+    training_data = np.load("data/datasets/dl_data_train.npz")
+    target_data = np.load("data/datasets/dl_target_rollouts.npz")
 
     print(f"""
             Number of training data points: {attribution_scores.shape[0]}
             Number of target data points: {attribution_scores.shape[1]}
             Percentage of nonzero elements in DA scores matrix: {np.count_nonzero(attribution_scores) / np.prod(attribution_scores.shape) * 100:.2f}%
     """)
-    return (attribution_scores,)
+    return attribution_scores, target_data, training_data
+
+
+@app.cell
+def _(mo):
+    slider = mo.ui.slider(start=0, stop=200-1, step=1, show_value=True)
+    slider
+    return (slider,)
+
+
+@app.cell
+def _(attribution_scores, np, plt, slider):
+    plt.figure()
+    plt.hist(np.log10(np.abs(attribution_scores[:, slider.value])))
+    plt.gcf()
+    return
+
+
+@app.cell
+def _(attribution_scores, np):
+    np.min(attribution_scores[:, 0]), np.max(attribution_scores[:, 0])
+    return
 
 
 @app.cell(hide_code=True)
@@ -208,6 +231,8 @@ def _(attribution_scores, np):
 
     entropies = [attribution_entropy(attribution_scores[:, i]) 
                  for i in range(attribution_scores.shape[1])]
+    print(attribution_entropy(attribution_scores))
+    print(np.array(entropies).mean())
     return attribution_entropy, entropies
 
 
@@ -217,6 +242,95 @@ def _(entropies, plt):
     plt.xlabel("Entropy")
     plt.ylabel("Frequency")
     plt.title("Distribution of Attribution Entropy Across Targets")
+    return
+
+
+@app.cell
+def _(attribution_scores, np, plt, target_data, training_data):
+    from matplotlib.lines import Line2D
+
+    inspection_id = 5
+    scores = attribution_scores[:, inspection_id]
+
+    abs_scores = np.abs(scores)
+    top_indices = np.argsort(abs_scores)[-10:]
+
+    print(f"Top 10 scores: {scores[top_indices]}")
+
+    top_training_data = training_data["X"][top_indices]
+
+    min_idx = np.argsort(scores)[:10]  # top min
+    max_idx = np.argsort(scores)[-10:][::-1]  # top max (descending)
+
+    target_label = target_data["A"][inspection_id]
+
+    axis1 = 0
+    axis2 = 2
+
+    plt.figure(figsize=(5, 3))
+    plt.scatter(
+        training_data["X"][:, axis1],
+        training_data["X"][:, axis2],
+        c=training_data["A"],
+        cmap="coolwarm",
+        alpha=0.01,
+        marker="o"
+    )
+    plt.scatter(
+        training_data["X"][min_idx, axis1],
+        training_data["X"][min_idx, axis2],
+        c=training_data["A"][min_idx],
+        cmap="coolwarm",
+        s=70,
+        marker="^"
+    )
+    plt.scatter(
+        training_data["X"][max_idx, axis1],
+        training_data["X"][max_idx, axis2],
+        c=training_data["A"][max_idx],
+        cmap="coolwarm",
+        s=70,
+        marker="^"
+    )
+    plt.scatter(
+        target_data["X"][inspection_id, axis1],
+        target_data["X"][inspection_id, axis2],
+        c=target_data["A"][inspection_id],
+        cmap="coolwarm",
+        s=90,
+        marker="X"
+    )
+    legend_elements = [
+        Line2D([0], [0], marker='X', color='w', markerfacecolor='black', markersize=8, alpha=0.75, label="Target point"),
+        Line2D([0], [0], marker='o', color='w', markerfacecolor='black', markersize=8, alpha=0.75, label="Training data"),
+        Line2D([0], [0], marker='^', color='w', markerfacecolor='black', markersize=8, alpha=0.75, label="Important points"),
+    ]
+    plt.xlabel(r"$v\ [\text{m sec}^{-1}]$")
+    plt.ylabel(r"$\omega\ [\text{sec}^{-1}]$")
+    yticks = plt.yticks()[0]
+    plt.yticks(yticks, [f"{np.rad2deg(x):.0f}°" for x in yticks])
+    # plt.legend(handles=legend_elements)
+    plt.tight_layout()
+    plt.gcf()
+    return (
+        Line2D,
+        abs_scores,
+        axis1,
+        axis2,
+        inspection_id,
+        legend_elements,
+        max_idx,
+        min_idx,
+        scores,
+        target_label,
+        top_indices,
+        top_training_data,
+        yticks,
+    )
+
+
+@app.cell
+def _():
     return
 
 

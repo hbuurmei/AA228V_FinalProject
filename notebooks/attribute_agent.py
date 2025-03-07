@@ -203,7 +203,7 @@ def _(attribution_scores, np, plt, target_data, training_data):
     plt.yticks(yticks, [f"{np.rad2deg(x):.0f}°" for x in yticks])
     plt.legend(handles=legend_elements)
     plt.tight_layout()
-    plt.savefig("IL_DA_result.svg", format="svg")
+    # plt.savefig("IL_DA_result.svg", format="svg")
     plt.gcf()
     return (
         Line2D,

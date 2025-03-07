@@ -10,7 +10,6 @@ from trak import TRAKer
 from trak.modelout_functions import AbstractModelOutput
 from utils import load_config, MLP
 
-
 class CustomModelOutput(AbstractModelOutput):
     """
     Custom model output class for the model.
@@ -39,34 +38,33 @@ class CustomModelOutput(AbstractModelOutput):
         return torch.tensor(1.0).detach()
 
 
-def run_data_attribution(model_name):
+def run_data_attribution(model_type, model_name):
     # Use GPU if available, otherwise use CPU
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
     # Load the data
-    if model_name == "dynamics_learner":
+    if model_type == "dynamics_learner":
         data_train = np.load("data/datasets/dl_data_train.npz")
         X_train = torch.from_numpy(data_train["X"]).float()
         A_train = torch.from_numpy(data_train["A"]).long()
         Xp_train = torch.from_numpy(data_train["Xp"]).float()
         inputs_train = torch.cat((X_train, A_train.reshape(-1, 1)), dim=1)
         labels_train = Xp_train
-        print(Xp_train.shape)
         train_dataset = TensorDataset(inputs_train, labels_train)
         train_loader = DataLoader(train_dataset, batch_size=100, shuffle=False)
         
         data_target = np.load("data/datasets/dl_target_rollouts.npz")
+        # data_target = np.load("data/datasets/dl_ood_targets.npz")
         X_target = torch.from_numpy(data_target["X"]).float()
         A_target = torch.from_numpy(data_target["A"]).long()
         Xp_target = torch.from_numpy(data_target["Xp"]).float()
         inputs_target = torch.cat((X_target, A_target.reshape(-1, 1)), dim=1)
         labels_target = Xp_target
-        print(Xp_target.shape)
         target_dataset = TensorDataset(inputs_target, labels_target)
         target_loader = DataLoader(target_dataset, batch_size=50, shuffle=False)
 
-    elif model_name == "IL_agent":
+    elif model_type == "IL_agent":
         data_train = np.load("data/datasets/expert_data_train.npz")
         data_target = np.load("data/datasets/BC_target_rollouts.npz")
         X_train = torch.from_numpy(data_train["X"]).float()
@@ -79,33 +77,42 @@ def run_data_attribution(model_name):
         target_loader = DataLoader(target_dataset, batch_size=100, shuffle=False)
 
     # Get the model checkpoints
-    if model_name == "dynamics_learner":
-        ckpts = [torch.load("data/models/dynamics_learner.pt", map_location='cpu', weights_only=True)]
-    elif model_name == "IL_agent":
+    if model_type == "dynamics_learner":
+        ckpts = [torch.load(f"data/models/{model_name}.pt", map_location='cpu', weights_only=True)]
+    elif model_type == "IL_agent":
         checkpoints_dir = "data/models/checkpoints"
         ckpt_files = list(Path(checkpoints_dir).rglob('*.pt'))
         ckpts = [torch.load(ckpt, map_location='cpu', weights_only=True) for ckpt in ckpt_files]
 
     # Load a model to evaluation
-    if model_name == "dynamics_learner":
+    if model_type == "dynamics_learner":
         dl_config = load_config("config/train/dynamics_learner_cartpole.yaml")
+        prefix = "dynamics_learner_"
+        if model_name.startswith(prefix):
+            size_part = model_name[len(prefix):]
+            # Split by underscore and convert each part to integer
+            dl_config["hidden_dims"] = [int(size) for size in size_part.split('_')]
+
         model = MLP(input_dim=dl_config["input_dim"],
                     hidden_dims=dl_config["hidden_dims"],
                     output_dim=dl_config["output_dim"],
                     predict_uncertainties=True).to(device).eval()
-    elif model_name == "IL_agent":
+    elif model_type == "IL_agent":
         il_agent_config = load_config("config/train/il_agent_cartpole.yaml")
         model = MLP(input_dim=il_agent_config["input_dim"],
                     hidden_dims=il_agent_config["hidden_dims"],
                     output_dim=il_agent_config["output_dim"]).to(device).eval()
 
     # Store results to folder
-    trak_results_dir = f"data/trak_results/{model_name}"
-    experiment_name = f"{il_agent_config["method"]}_policy" if model_name == "IL_agent" else "dynamics_learner"
+    trak_results_dir = f"data/trak_results/{model_type}"
+    if model_type == "IL_agent":
+        experiment_name = f"{il_agent_config["method"]}_policy"
+    elif model_type == "dynamics_learner":
+        experiment_name = model_name
 
     # Initialize TRAKer object
     traker = TRAKer(model=model,
-                    task='image_classification' if model_name == "IL_agent" else CustomModelOutput(),
+                    task='image_classification' if model_type == "IL_agent" else CustomModelOutput(),
                     train_set_size=len(train_dataset),
                     save_dir=trak_results_dir,
                     device=str(device),
@@ -145,9 +152,9 @@ if __name__ == "__main__":
     parser.add_argument('--dynamics', action='store_true', help='Attribution for dynamics learner, default is for IL agent')
     args = parser.parse_args()
     if args.dynamics:
-        model_name = "dynamics_learner"
+        model_type = "dynamics_learner"
     else:
-        model_name = "IL_agent"
-    print(f"Running attribution for {model_name}")
+        model_type = "IL_agent"
+    print(f"Running attribution for {model_type}")
 
-    run_data_attribution(model_name)
+    run_data_attribution(model_type)

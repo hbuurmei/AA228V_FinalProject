@@ -108,13 +108,16 @@ class DynamicsLearner:
         self.model.eval()
 
 
-def train_dynamics_learner(dl_config, env_config):
-    # Collect datasets for the dynamics learner
+def train_dynamics_learner(dl_config, env_config, model_name="dynamics_learner", save_model=True):
+    # Collect training data
     X_train, A_train, Xp_train = get_dataset_from_hyperrectangle(env_config, dl_config["train_num_samples"])
     np.savez_compressed("data/datasets/dl_data_train.npz", X=X_train, A=A_train, Xp=Xp_train)
     
+    # Collect test data
     X_test, A_test, Xp_test = get_dataset_from_hyperrectangle(env_config, dl_config["test_num_samples"])
     np.savez_compressed("data/datasets/dl_data_test.npz", X=X_test, A=A_test, Xp=Xp_test)
+
+    # Collect OOD target data
 
     X_train = torch.from_numpy(X_train).float()
     A_train = torch.from_numpy(A_train).long()
@@ -137,8 +140,8 @@ def train_dynamics_learner(dl_config, env_config):
         # Average batch loss for this epoch
         avg_epoch_loss = total_epoch_loss / num_batches
 
-        if epoch % 50 == 0:
-            print(f"DL epoch {epoch}: Avgerage Loss {avg_epoch_loss:.6f}")
+        if epoch % 100 == 0:
+            print(f"DL epoch {epoch}: Avgerage Loss {avg_epoch_loss:.3f}")
 
     # Evaluate the dynamics learner
     with torch.no_grad():
@@ -150,7 +153,7 @@ def train_dynamics_learner(dl_config, env_config):
         test_mean = test_output[:, :dl.output_dim]
         test_log_var = test_output[:, dl.output_dim:]
         test_loss = dl.criterion(test_mean, test_log_var, test_target)
-        print(f"DL test loss: {test_loss.item():.6f}")
+        print(f"DL test loss: {test_loss.item():.3f}")
 
     # Collect data from the dynamics learner for data attribution
     target_input = torch.cat((X_test, A_test), dim=1).to(dl.device)
@@ -162,6 +165,7 @@ def train_dynamics_learner(dl_config, env_config):
                         A=A_test.cpu().numpy(),
                         Xp=target_mean.detach().cpu().numpy())
 
-    # Save the dynamics learner
-    dl.save_model(f"data/models/dynamics_learner.pt")
+    if save_model:
+        # Save the dynamics learner
+        dl.save_model(f"data/models/{model_name}.pt")
     return dl, test_loss.item()
