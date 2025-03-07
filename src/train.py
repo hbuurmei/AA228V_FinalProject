@@ -2,7 +2,7 @@ import argparse
 from reinforcement_learning import RLAgent, train_rl_agent
 from imitation_learning import ILAgent, train_il_agent
 from dynamics_learning import DynamicsLearner, train_dynamics_learner
-from utils import load_config, policy_rollout
+from utils import load_config, load_extra_data_config, policy_rollout
 from models import ExtraDataConfig, ShapeType
 
 
@@ -12,6 +12,7 @@ def train_models():
     parser.add_argument('--train_student', action='store_true', help='Train student policy')
     parser.add_argument('--train_dynamics_learner', action='store_true', help='Train dynamics learner')
     parser.add_argument('--visualize_expert', action='store_true', help='Visualize expert policy rollout')
+    parser.add_argument('--extra_data_config', type=str, help='Path to extra data configuration file')
     args = parser.parse_args()
 
     # Load env, RL agent, IL agent and DL configs
@@ -35,19 +36,12 @@ def train_models():
     
     # Train imitation learning agent
     if args.train_student:
-        # Example of how to use extra_data_config
-        # Uncomment and modify as needed
+        # Load extra data config from file if specified
         extra_data_config = None
-        
-        # Example: Add synthetic data around a specific state with "push right" action
-        # extra_data_config = ExtraDataConfig(
-        #     centroid=[0, 0, 0.1, 0],  # [x, x_dot, theta, theta_dot] - slight tilt
-        #     eps=0.05,                 # Small region around the centroid
-        #     shape=ShapeType.SPHERICAL,  # Sample from a sphere
-        #     dim=4,                    # State dimension for cartpole
-        #     label=1,                  # Action 1 (push right)
-        #     num_samples=200           # Number of synthetic samples
-        # )
+        if args.extra_data_config:
+            print(f"Loading extra data configuration from {args.extra_data_config}")
+            extra_data_config = load_extra_data_config(args.extra_data_config)
+            print(f"Extra data config loaded: {extra_data_config.num_samples} samples at {extra_data_config.shape} region")
         
         # Pass the extra_data_config as a separate parameter
         agent, _ = train_il_agent(il_agent_config, expert, env_config, extra_data_config)

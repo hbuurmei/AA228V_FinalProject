@@ -1,0 +1,7 @@
+# Configuration for generating synthetic data around a balanced cartpole state
+centroid: [0, 0, 0, 0]    # [x, x_dot, theta, theta_dot] - balanced position
+eps: 0.02                 # Very small region around the balanced position
+shape: spherical          # Sample from a sphere
+dim: 4                    # State dimension for cartpole
+label: 0                  # Action doesn't matter much when balanced, using 0
+num_samples: 100          # Number of synthetic samples

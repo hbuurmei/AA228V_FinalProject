@@ -129,7 +129,7 @@ def train_il_agent(agent_config, expert, env_config, extra_data_config: Optional
     
     # Add extra synthetic data if configuration is provided
     if extra_data_config is not None:
-        print(f"Adding {extra_data_config['num_samples']} synthetic data points...")
+        print(f"Adding {extra_data_config.num_samples} synthetic data points...")
         X_extra, A_extra = make_extra_data(extra_data_config)
         X_train = np.concatenate([X_train, X_extra])
         A_train = np.concatenate([A_train, A_extra])

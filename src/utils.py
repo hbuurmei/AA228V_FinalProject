@@ -114,6 +114,26 @@ def load_config(config_path):
         config = yaml.safe_load(f)
     return config
 
+def load_extra_data_config(config_path):
+    """
+    Load extra data configuration from a YAML file and convert it to an ExtraDataConfig object.
+    
+    Parameters:
+    -----------
+    config_path : str
+        Path to the YAML configuration file
+        
+    Returns:
+    --------
+    ExtraDataConfig
+        Pydantic model with the loaded configuration
+    """
+    # Load the raw config from YAML
+    raw_config = load_config(config_path)
+    
+    # Convert to ExtraDataConfig
+    return ExtraDataConfig(**raw_config)
+
 def get_dataset_from_model(model, env_config, episodes, max_steps=500):
     """
     Collect states, actions and next states from a model in an environment.
