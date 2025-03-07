@@ -103,7 +103,7 @@ def label_dataset_with_model(model, X):
     return y
 
 
-def train_il_agent(agent_config, expert, env_config):
+def train_il_agent(agent_config, expert, env_config, extra_data_config=None):
     """
     Train an Imitation Learning agent on expert data.
     """
