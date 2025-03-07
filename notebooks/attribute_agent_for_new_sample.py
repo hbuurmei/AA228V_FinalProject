@@ -13,17 +13,21 @@ def _():
     from pathlib import Path
     from tqdm import tqdm
     from trak import TRAKer
+    from trak.savers import AbstractSaver
     import matplotlib.pyplot as plt
+    from datetime import datetime
     import sys; sys.path.append("src")
     from utils import load_config, load_extra_data_config, make_extra_data, MLP
     from imitation_learning import ILAgent
     return (
+        AbstractSaver,
         DataLoader,
         ILAgent,
         MLP,
         Path,
         TRAKer,
         TensorDataset,
+        datetime,
         load_config,
         load_extra_data_config,
         make_extra_data,
@@ -46,7 +50,7 @@ def _(torch):
 @app.cell
 def _(load_extra_data_config, make_extra_data, torch):
     # Load extra data configuration
-    extra_data_config = load_extra_data_config("config/extra_data/cartpole_tilt_left.yaml")
+    extra_data_config = load_extra_data_config("config/extra_data/cartpole_tilt_right.yaml")
     print(f"Loaded extra data config: {extra_data_config.num_samples} samples at {extra_data_config.centroid}")
 
     # Generate synthetic data
@@ -62,7 +66,7 @@ def _(A_extra, DataLoader, TensorDataset, X_extra, np, torch):
     X_train = torch.from_numpy(data_train["X"]).float()
     A_train = torch.from_numpy(data_train["A"]).long()
 
-    X_train = torch.concatenate([X_train, X_extra])
+    X_train = torch.concatenate([X_train, X_extra.float()])
     A_train = torch.concatenate([A_train, A_extra])
 
     X_target = torch.from_numpy(data_target["X"]).float()
@@ -94,6 +98,12 @@ def _(Path, torch):
 
 
 @app.cell
+def _(ckpt_files):
+    ckpt_files
+    return
+
+
+@app.cell
 def _(MLP, device, load_config):
     il_agent_config = load_config("config/train/il_agent_cartpole.yaml")
     model = MLP(input_dim=il_agent_config["input_dim"],
@@ -103,11 +113,18 @@ def _(MLP, device, load_config):
 
 
 @app.cell
-def _():
+def _(datetime):
     # Store results to folder
     trak_results_dir = f"data/trak_results/IL_agent"
-    experiment_name = "IL_agent"
+    experiment_name = "IL_agent"+datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     return experiment_name, trak_results_dir
+
+
+@app.cell
+def _(AbstractSaver):
+    class NoSaver(AbstractSaver):
+        pass
+    return (NoSaver,)
 
 
 @app.cell
@@ -117,6 +134,7 @@ def _(TRAKer, device, model, train_dataset, trak_results_dir):
                     task='image_classification',
                     train_set_size=len(train_dataset),
                     save_dir=trak_results_dir,
+                    load_from_save_dir=False,
                     device=str(device),
                     use_half_precision=False)
     return (traker,)
@@ -139,12 +157,6 @@ def _(ckpts, device, tqdm, train_loader, traker):
     # TRAKer does some post-processing to get ready for the next step
     traker.finalize_features()
     return batch, batch_dev, ckpt, model_id
-
-
-@app.cell
-def _(train_loader):
-    next(iter(train_loader))[1].shape
-    return
 
 
 @app.cell
@@ -179,13 +191,7 @@ def _(np, plt, scores):
     return
 
 
-@app.cell
-def _(np, scores):
-    np.sort(scores[:, 0])
-    return
-
-
-@app.cell
+@app.cell(hide_code=True)
 def _(np, plt, slider_log10eps, slider_x, slider_xdot, training_data):
     def plot_agent(agent):
         # Fix indices for position and velocity (5,5)
@@ -239,6 +245,12 @@ def _(mo, np):
     return slider_log10eps, slider_x, slider_xdot
 
 
+@app.cell
+def _(scores):
+    scores[-20:].T
+    return
+
+
 @app.cell(hide_code=True)
 def _(mo, np, slider_log10eps, slider_x, slider_xdot):
     mo.vstack([
@@ -250,15 +262,41 @@ def _(mo, np, slider_log10eps, slider_x, slider_xdot):
 
 
 @app.cell
-def _(agent_imi, batch_ref, np, plot_agent, plt, scores, training_data):
+def _(
+    agent_imi,
+    batch_ref,
+    np,
+    plot_agent,
+    plt,
+    scores,
+    slider_log10eps,
+    slider_x,
+    slider_xdot,
+    training_data,
+):
     fig = plot_agent(agent_imi)
     plt.scatter(batch_ref[0][0, 2:3], batch_ref[0][0, 3:4], marker="x")
 
-    idx_scores_to_plot = np.argsort(np.abs(scores[:, 0]))[-20:]
-    plt.scatter(training_data[idx_scores_to_plot, 2:3], training_data[idx_scores_to_plot, 3:4], c=scores[idx_scores_to_plot, 0], marker='s')
+    s1 = slider_x.value
+    s2 = slider_xdot.value
+    eps = np.pow(10, slider_log10eps.value)
+
+    idx_scores_to_plot = np.argsort(np.abs(scores[:, 0]))[-5:]
+    idx_visible = np.argwhere(np.linalg.norm(training_data[:, 0:2] - np.array([s1, s2]), axis=1) < eps)[:, 0]
+    idx_scores_to_plot_and_visible = list(set(idx_scores_to_plot).intersection(set(idx_visible)))
+    plt.scatter(training_data[idx_scores_to_plot_and_visible, 2:3], training_data[idx_scores_to_plot_and_visible, 3:4],
+                c=scores[idx_scores_to_plot_and_visible, 0], marker='s')
     plt.colorbar()
     plt.gcf()
-    return fig, idx_scores_to_plot
+    return (
+        eps,
+        fig,
+        idx_scores_to_plot,
+        idx_scores_to_plot_and_visible,
+        idx_visible,
+        s1,
+        s2,
+    )
 
 
 @app.cell
