@@ -34,17 +34,21 @@ def train_models():
     
     # Train imitation learning agent
     if args.train_student:
-        # You can define extra_data_config here if needed
+        # Example of how to use extra_data_config
+        # Uncomment and modify as needed
         extra_data_config = None
-        # Example extra_data_config:
+        
+        # Example: Add synthetic data around a specific state with "push right" action
         # extra_data_config = {
-        #     'centroid': [0, 0, 0, 0],  # For cartpole: [x, x_dot, theta, theta_dot]
-        #     'eps': 0.1,
-        #     'shape': 'spherical',
-        #     'dim': 4,
-        #     'label': 1,
-        #     'num_samples': 100
+        #     'centroid': [0, 0, 0.1, 0],  # [x, x_dot, theta, theta_dot] - slight tilt
+        #     'eps': 0.05,                  # Small region around the centroid
+        #     'shape': 'spherical',         # Sample from a sphere
+        #     'dim': 4,                     # State dimension for cartpole
+        #     'label': 1,                   # Action 1 (push right)
+        #     'num_samples': 200            # Number of synthetic samples
         # }
+        
+        # Pass the extra_data_config as a separate parameter
         agent, _ = train_il_agent(il_agent_config, expert, env_config, extra_data_config)
     else:
         agent = ILAgent(il_agent_config)

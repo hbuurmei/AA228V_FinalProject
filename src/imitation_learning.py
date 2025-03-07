@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
-from utils import MLP, policy_rollout, get_dataset_from_model
+from utils import MLP, policy_rollout, get_dataset_from_model, make_extra_data
 
 
 class ILAgent:
@@ -106,12 +106,32 @@ def label_dataset_with_model(model, X):
 def train_il_agent(agent_config, expert, env_config, extra_data_config=None):
     """
     Train an Imitation Learning agent on expert data.
+    
+    Parameters:
+    -----------
+    agent_config : dict
+        Configuration for the imitation learning agent
+    expert : RLAgent
+        Expert policy to imitate
+    env_config : dict
+        Environment configuration
+    extra_data_config : dict, optional
+        Configuration for generating extra synthetic data
+        If provided, synthetic data will be added to the training set
     """
     # Collect dataset from the expert for both training and testing
     X_train, A_train, _ = get_dataset_from_model(expert, env_config, episodes=agent_config["train_data_episodes"])
     np.savez_compressed("data/datasets/expert_data_train.npz", X=X_train, A=A_train)
     X_test, A_test, _ = get_dataset_from_model(expert, env_config, episodes=agent_config["test_data_episodes"])
     np.savez_compressed("data/datasets/expert_data_test.npz", X=X_test, A=A_test)
+    
+    # Add extra synthetic data if configuration is provided
+    if extra_data_config is not None:
+        print(f"Adding {extra_data_config['num_samples']} synthetic data points...")
+        X_extra, A_extra = make_extra_data(extra_data_config)
+        X_train = np.concatenate([X_train, X_extra])
+        A_train = np.concatenate([A_train, A_extra])
+        print(f"Training data size after augmentation: {len(X_train)}")
 
     X_train = torch.from_numpy(X_train).float()
     A_train = torch.from_numpy(A_train).long()
