@@ -1,5 +1,5 @@
 # Configuration for generating synthetic data around a tilted cartpole state
-centroid: [0, 0, -0.1, 0]  # [x, x_dot, theta, theta_dot] - slight tilt to the left
+centroid: [0, 0, -0.15707963267948966, -0.2617993877991494]  # [x, x_dot, theta, theta_dot] - slight tilt to the left: 9 degree tilt, 15 degree/s angular vel
 eps: 0.05                  # Small region around the centroid
 shape: spherical           # Sample from a sphere
 dim: 4                     # State dimension for cartpole
