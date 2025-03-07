@@ -6,7 +6,7 @@ from torch.utils.data import TensorDataset, DataLoader
 from tqdm import tqdm
 from typing import Optional
 from utils import MLP, policy_rollout, get_dataset_from_model, make_extra_data
-from models import ExtraDataConfig
+from extra_data import ExtraDataConfig
 
 
 class ILAgent:

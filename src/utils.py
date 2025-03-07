@@ -2,7 +2,7 @@ import yaml
 import gymnasium as gym
 import numpy as np
 import torch.nn as nn
-from models import ExtraDataConfig
+from extra_data import ExtraDataConfig
 
 
 def is_in_hull(point, hull, eps=None):

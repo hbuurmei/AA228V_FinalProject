@@ -3,7 +3,7 @@ from reinforcement_learning import RLAgent, train_rl_agent
 from imitation_learning import ILAgent, train_il_agent
 from dynamics_learning import DynamicsLearner, train_dynamics_learner
 from utils import load_config, load_extra_data_config, policy_rollout
-from models import ExtraDataConfig, ShapeType
+from extra_data import ExtraDataConfig, ShapeType
 
 
 def train_models():
