@@ -15,7 +15,7 @@ def _():
     from trak import TRAKer
     import matplotlib.pyplot as plt
     import sys; sys.path.append("src")
-    from utils import load_config, MLP
+    from utils import load_config, load_extra_data_config, make_extra_data, MLP
     from imitation_learning import ILAgent
     return (
         DataLoader,
@@ -165,6 +165,21 @@ def _(np, plt, scores):
 def _(np, scores):
     np.sort(scores[:, 0])
     return
+
+@app.cell
+def _():
+    import sys; sys.path.append("src")
+    from utils import load_extra_data_config, make_extra_data
+    
+    # Load extra data configuration
+    extra_data_config = load_extra_data_config("config/extra_data/cartpole_tilt_left.yaml")
+    print(f"Loaded extra data config: {extra_data_config.num_samples} samples at {extra_data_config.centroid}")
+    
+    # Generate synthetic data
+    X_extra, A_extra = make_extra_data(extra_data_config)
+    print(f"Generated {len(X_extra)} synthetic data points with action label: {extra_data_config.label}")
+    
+    return extra_data_config, X_extra, A_extra
 
 
 @app.cell
