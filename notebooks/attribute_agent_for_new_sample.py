@@ -161,7 +161,12 @@ def _(ckpts, device, tqdm, train_loader, traker):
 
 @app.cell
 def _(np, torch):
-    batch_ref = [torch.tensor([[0.0, 0.0, np.deg2rad(9), np.deg2rad(15)]]).float(), torch.tensor([1]).long()]
+    batch_ref = [torch.tensor([[0.0, 0.0, np.deg2rad(9), np.deg2rad(15)],
+                               [0.0, 0.0, np.deg2rad(0), np.deg2rad(25)],
+                               [0.0, 0.0, np.deg2rad(12), -np.deg2rad(15)],
+                               [0.0, 0.0, -np.deg2rad(9), -np.deg2rad(15)],
+                              ]).float(),
+                 torch.tensor([1, 1, 1, 1]).long()]
     return (batch_ref,)
 
 
@@ -230,7 +235,8 @@ def _(np, plt, slider_log10eps, slider_x, slider_xdot, training_data):
 @app.cell
 def _(ILAgent, load_config):
     agent_imi = ILAgent(load_config("config/train/il_agent_cartpole.yaml"))
-    agent_imi.load_model("data/models/BC_policy.pt")
+    #agent_imi.load_model("data/models/BC_policy.pt")
+    agent_imi.load_model("data/models/BC_policy_ckpts/BC_policy_epoch199_2025-03-07_14-43-54.pt")
     agent_imi.device = "cpu"
     agent_imi.model.to(agent_imi.device)
     agent_imi
@@ -238,25 +244,27 @@ def _(ILAgent, load_config):
 
 
 @app.cell
-def _(mo, np):
+def _(batch_ref, mo, np):
     slider_x    = mo.ui.slider(steps=np.linspace(-2.4, 2.4, 51), show_value=True, value=0)
     slider_xdot = mo.ui.slider(steps=np.linspace(-3, 3, 51), show_value=True, value=0)
     slider_log10eps = mo.ui.slider(start=-3, step=0.25, stop=-0, show_value=True, value=-1)
-    return slider_log10eps, slider_x, slider_xdot
+    slider_i    = mo.ui.slider(steps=np.arange(0, batch_ref[0].shape[0]), show_value=True, value=0)
+    return slider_i, slider_log10eps, slider_x, slider_xdot
 
 
 @app.cell
 def _(scores):
-    scores[-20:].T
+    scores[-10:, :].T
     return
 
 
 @app.cell(hide_code=True)
-def _(mo, np, slider_log10eps, slider_x, slider_xdot):
+def _(mo, np, slider_i, slider_log10eps, slider_x, slider_xdot):
     mo.vstack([
         mo.md(f"x     : {slider_x}"),
         mo.md(f"x'    : {slider_xdot}"),
-        mo.md(f"logeps: {slider_log10eps} -> eps: {np.pow(10, slider_log10eps.value):.2f}")
+        mo.md(f"logeps: {slider_log10eps} -> eps: {np.pow(10, slider_log10eps.value):.2f}"),
+        mo.md(f"i:      {slider_i}")
     ], align="start")
     return
 
@@ -269,28 +277,31 @@ def _(
     plot_agent,
     plt,
     scores,
+    slider_i,
     slider_log10eps,
     slider_x,
     slider_xdot,
     training_data,
 ):
     fig = plot_agent(agent_imi)
-    plt.scatter(batch_ref[0][0, 2:3], batch_ref[0][0, 3:4], marker="x")
+    i_target = slider_i.value
+    plt.scatter(batch_ref[0][i_target, 2:3], batch_ref[0][i_target, 3:4], marker="x")
 
     s1 = slider_x.value
     s2 = slider_xdot.value
     eps = np.pow(10, slider_log10eps.value)
 
-    idx_scores_to_plot = np.argsort(np.abs(scores[:, 0]))[-5:]
+    idx_scores_to_plot = np.argsort(np.abs(scores[:, i_target]))[-10:]
     idx_visible = np.argwhere(np.linalg.norm(training_data[:, 0:2] - np.array([s1, s2]), axis=1) < eps)[:, 0]
     idx_scores_to_plot_and_visible = list(set(idx_scores_to_plot).intersection(set(idx_visible)))
     plt.scatter(training_data[idx_scores_to_plot_and_visible, 2:3], training_data[idx_scores_to_plot_and_visible, 3:4],
-                c=scores[idx_scores_to_plot_and_visible, 0], marker='s')
+                c=scores[idx_scores_to_plot_and_visible, i_target], marker='s')
     plt.colorbar()
     plt.gcf()
     return (
         eps,
         fig,
+        i_target,
         idx_scores_to_plot,
         idx_scores_to_plot_and_visible,
         idx_visible,
