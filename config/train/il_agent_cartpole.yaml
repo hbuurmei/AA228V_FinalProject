@@ -8,4 +8,4 @@ batch_size: 1024
 train_data_episodes: 50
 test_data_episodes: 10
 num_models: 5
-seed: 3
+seed: 1

@@ -136,8 +136,6 @@ def train_il_agent(agent_config, expert, env_config, extra_data_config: Optional
     if extra_data_config is not None:
         print(f"Adding {extra_data_config.num_samples} synthetic data points...")
         X_extra, A_extra = make_extra_data(extra_data_config)
-        mask = torch.rand_like(torch.tensor(A_extra).float()) < 0.5
-        A_extra[mask] = 1 - A_extra[mask]
         X_train = np.concatenate([X_train, X_extra])
         A_train = np.concatenate([A_train, A_extra])
         print(f"Training data size after augmentation: {len(X_train)}")
